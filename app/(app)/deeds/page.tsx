@@ -10,7 +10,7 @@ export default async function DeedsPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const [{ data: templates }, { data: myDeeds }, { data: shameCount }] =
+  const [{ data: templates }, { data: myDeeds }, { count: shameCount }] =
     await Promise.all([
       supabase
         .from("good_deed_templates")
@@ -32,7 +32,7 @@ export default async function DeedsPage() {
         .is("resolved_at", null),
     ]);
 
-  const activeShames = shameCount.count ?? 0;
+  const activeShames = shameCount ?? 0;
 
   return (
     <>
