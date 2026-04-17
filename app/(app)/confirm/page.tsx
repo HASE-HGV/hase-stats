@@ -66,19 +66,9 @@ export default async function ConfirmPage() {
             const label = d.template?.title ?? d.description ?? "Good Deed";
             return (
               <li key={d.id} className="card">
-                <div style={{ display: "flex", gap: 14 }}>
+                <div className="row">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={d.photo_url}
-                    alt=""
-                    style={{
-                      width: 140,
-                      height: 140,
-                      objectFit: "cover",
-                      borderRadius: 10,
-                      background: "#000",
-                    }}
-                  />
+                  <img src={d.photo_url} alt="" className="thumb" />
                   <div style={{ flex: 1 }}>
                     <div
                       style={{

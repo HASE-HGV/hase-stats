@@ -24,23 +24,27 @@ export default async function AppLayout({
   return (
     <>
       <nav>
-        <strong style={{ fontSize: 18 }}>HASE · WoS</strong>
-        <Link href="/wall">Wall of Shame</Link>
-        <Link href="/deeds">Good Deeds</Link>
-        <Link href="/confirm">Bestätigen</Link>
-        <Link href="/profile">Profil</Link>
+        <span className="nav-brand">HASE · WoS</span>
         <span className="spacer" />
-        {profile?.avatar_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={profile.avatar_url}
-            alt=""
-            className="avatar"
-            style={{ width: 32, height: 32 }}
-          />
-        ) : null}
-        <span className="muted">@{profile?.username ?? "?"}</span>
-        <LogoutButton />
+        <div className="nav-user">
+          {profile?.avatar_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={profile.avatar_url}
+              alt=""
+              className="avatar"
+              style={{ width: 32, height: 32 }}
+            />
+          ) : null}
+          <span className="muted username">@{profile?.username ?? "?"}</span>
+          <LogoutButton />
+        </div>
+        <div className="nav-links">
+          <Link href="/wall">Wall of Shame</Link>
+          <Link href="/deeds">Good Deeds</Link>
+          <Link href="/confirm">Bestätigen</Link>
+          <Link href="/profile">Profil</Link>
+        </div>
       </nav>
       <main className="container">{children}</main>
     </>
