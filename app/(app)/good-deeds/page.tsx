@@ -19,13 +19,45 @@ export default async function WallOfGoodDeedsPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { data, error } = await supabase
+  // Two separate queries instead of an embedded join — the embedded
+  // creator:created_by(username) form depends on PostgREST's schema cache
+  // picking up the FK, which can stay stale after migrations.
+  const { data: templateRows, error } = await supabase
     .from("good_deed_templates")
-    .select("id, title, description, active, created_by, creator:created_by(username)")
+    .select("id, title, description, active, created_by")
     .eq("active", true)
     .order("title");
 
-  const tasks = (data ?? []) as unknown as TaskRow[];
+  const creatorIds = Array.from(
+    new Set(
+      (templateRows ?? [])
+        .map((t) => t.created_by)
+        .filter((id): id is string => Boolean(id))
+    )
+  );
+
+  const { data: creatorRows } =
+    creatorIds.length > 0
+      ? await supabase
+          .from("profiles")
+          .select("id, username")
+          .in("id", creatorIds)
+      : { data: [] as { id: string; username: string }[] };
+
+  const creatorByid = new Map(
+    (creatorRows ?? []).map((p) => [p.id, p.username])
+  );
+
+  const tasks: TaskRow[] = (templateRows ?? []).map((t) => ({
+    id: t.id,
+    title: t.title,
+    description: t.description,
+    active: t.active,
+    created_by: t.created_by,
+    creator: t.created_by
+      ? { username: creatorByid.get(t.created_by) ?? "?" }
+      : null,
+  }));
 
   return (
     <>
