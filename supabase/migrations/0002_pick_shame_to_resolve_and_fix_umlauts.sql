@@ -94,6 +94,18 @@ begin
         where id = deed_row.target_shame_id
           and target_user_id = deed_row.user_id
           and resolved_at is null;
+    else
+      -- Legacy fallback: deeds submitted before target_shame_id existed
+      -- still auto-resolve the oldest open entry of the author.
+      update public.shame_entries
+        set resolved_at = now(), resolved_by_deed_id = new.deed_id
+        where id = (
+          select id from public.shame_entries
+          where target_user_id = deed_row.user_id
+            and resolved_at is null
+          order by created_at asc
+          limit 1
+        );
     end if;
   end if;
 
@@ -101,3 +113,10 @@ begin
 end;
 $body$;
 
+
+-- ---------- 3. PostgREST Schema-Cache neu laden ----------------------------
+-- Damit PostgREST den neuen FK target_shame_id und den Legacy-FK created_by
+-- (Migration 0001) als Beziehung erkennt. Ohne diesen Reload schlaegt z.B.
+-- der Join "creator:created_by(username)" auf der Wall-of-Good-Deeds-Seite
+-- mit "Could not find a relationship ... in the schema cache" fehl.
+notify pgrst, 'reload schema';

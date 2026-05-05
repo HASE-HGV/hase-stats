@@ -181,13 +181,25 @@ begin
       set status = 'approved', approved_at = now()
       where id = new.deed_id;
 
-    -- Resolve the shame entry the deed author selected when submitting.
+    -- Resolve the shame entry the deed author selected. Fallback to the
+    -- oldest open entry of the author for legacy deeds that were submitted
+    -- before target_shame_id existed.
     if deed_row.target_shame_id is not null then
       update public.shame_entries
         set resolved_at = now(), resolved_by_deed_id = new.deed_id
         where id = deed_row.target_shame_id
           and target_user_id = deed_row.user_id
           and resolved_at is null;
+    else
+      update public.shame_entries
+        set resolved_at = now(), resolved_by_deed_id = new.deed_id
+        where id = (
+          select id from public.shame_entries
+          where target_user_id = deed_row.user_id
+            and resolved_at is null
+          order by created_at asc
+          limit 1
+        );
     end if;
   end if;
 
