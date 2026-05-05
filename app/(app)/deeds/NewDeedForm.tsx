@@ -5,8 +5,6 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { GoodDeedTemplate } from "@/lib/types";
 
-const CUSTOM = "__custom";
-
 type OpenShame = {
   id: string;
   reason: string;
@@ -25,13 +23,13 @@ export default function NewDeedForm({
 }) {
   const router = useRouter();
   const [templateId, setTemplateId] = useState<string>("");
-  const [customText, setCustomText] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [targetShameId, setTargetShameId] = useState<string>("");
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const hasOpenShames = openShames.length > 0;
+  const hasTemplates = templates.length > 0;
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -41,11 +39,7 @@ export default function NewDeedForm({
       return;
     }
     if (!templateId) {
-      setErr("Bitte etwas auswählen.");
-      return;
-    }
-    if (templateId === CUSTOM && customText.trim().length === 0) {
-      setErr("Bitte Beschreibung eingeben.");
+      setErr("Bitte eine Aufgabe auswählen.");
       return;
     }
     if (hasOpenShames && !targetShameId) {
@@ -71,8 +65,8 @@ export default function NewDeedForm({
 
     const { error } = await supabase.from("good_deeds").insert({
       user_id: userId,
-      template_id: templateId === CUSTOM ? null : templateId,
-      description: templateId === CUSTOM ? customText.trim() : null,
+      template_id: templateId,
+      description: null,
       photo_url: publicUrl,
       target_shame_id: targetShameId || null,
     });
@@ -82,7 +76,6 @@ export default function NewDeedForm({
       return;
     }
     setTemplateId("");
-    setCustomText("");
     setFile(null);
     setTargetShameId("");
     router.refresh();
@@ -98,37 +91,26 @@ export default function NewDeedForm({
           required
           value={templateId}
           onChange={(e) => setTemplateId(e.target.value)}
+          disabled={!hasTemplates}
         >
-          <option value="">— auswählen —</option>
+          <option value="">
+            {hasTemplates ? "— auswählen —" : "— keine Aufgabe verfügbar —"}
+          </option>
           {templates.map((t) => (
             <option key={t.id} value={t.id}>
               {t.title}
             </option>
           ))}
-          <option value={CUSTOM}>Etwas anderes…</option>
         </select>
         <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>
           Fehlt eine Aufgabe? Auf der{" "}
           <a href="/good-deeds" style={{ textDecoration: "underline" }}>
             Wall of Good Deeds
           </a>{" "}
-          anlegen.
+          anlegen. Aufgaben, die gerade auf Bestätigung warten, sind hier
+          ausgeblendet, bis sie bestätigt sind.
         </div>
       </label>
-      {templateId === CUSTOM ? (
-        <label>
-          <span className="muted" style={{ fontSize: 13 }}>
-            Beschreibung
-          </span>
-          <input
-            type="text"
-            maxLength={500}
-            value={customText}
-            onChange={(e) => setCustomText(e.target.value)}
-            placeholder="z.B. Kaffeemaschine entkalkt"
-          />
-        </label>
-      ) : null}
       {hasOpenShames ? (
         <label>
           <span className="muted" style={{ fontSize: 13 }}>

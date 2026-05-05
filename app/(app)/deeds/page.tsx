@@ -15,6 +15,7 @@ export default async function DeedsPage() {
     { data: myDeeds },
     { count: shameCount },
     { data: openShames },
+    { data: pendingDeeds },
   ] = await Promise.all([
     supabase
       .from("good_deed_templates")
@@ -39,6 +40,11 @@ export default async function DeedsPage() {
       .select("id, reason, created_at, reporter_username")
       .eq("target_id", user!.id)
       .order("created_at", { ascending: false }),
+    supabase
+      .from("good_deeds")
+      .select("template_id")
+      .eq("status", "pending")
+      .not("template_id", "is", null),
   ]);
 
   const activeShames = shameCount ?? 0;
@@ -48,6 +54,17 @@ export default async function DeedsPage() {
     created_at: string;
     reporter_username: string;
   }[];
+
+  // Templates ausblenden, fuer die schon irgendjemand einen Deed eingereicht
+  // hat, der noch nicht durch zwei Bestaetigungen approved wurde.
+  const blockedTemplateIds = new Set(
+    (pendingDeeds ?? [])
+      .map((d) => d.template_id)
+      .filter((id): id is string => Boolean(id))
+  );
+  const availableTemplates = ((templates ?? []) as GoodDeedTemplate[]).filter(
+    (t) => !blockedTemplateIds.has(t.id)
+  );
 
   return (
     <>
@@ -66,7 +83,7 @@ export default async function DeedsPage() {
       <div className="card" style={{ marginBottom: 24 }}>
         <h2>Neuen Good Deed einreichen</h2>
         <NewDeedForm
-          templates={(templates ?? []) as GoodDeedTemplate[]}
+          templates={availableTemplates}
           userId={user!.id}
           openShames={myOpenShames}
         />
