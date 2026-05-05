@@ -8,9 +8,11 @@ import type { Profile } from "@/lib/types";
 export default function NewShameForm({
   profiles,
   reporterId,
+  selfId,
 }: {
   profiles: Profile[];
   reporterId: string;
+  selfId: string;
 }) {
   const router = useRouter();
   const [targetId, setTargetId] = useState<string>("");
@@ -56,7 +58,7 @@ export default function NewShameForm({
           <option value="">— auswählen —</option>
           {profiles.map((p) => (
             <option key={p.id} value={p.id}>
-              @{p.username}
+              {p.id === selfId ? `@${p.username} (ich selbst)` : `@${p.username}`}
             </option>
           ))}
         </select>

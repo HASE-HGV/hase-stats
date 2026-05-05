@@ -41,7 +41,8 @@ export default async function AppLayout({
         </div>
         <div className="nav-links">
           <Link href="/wall">Wall of Shame</Link>
-          <Link href="/deeds">Good Deeds</Link>
+          <Link href="/good-deeds">Wall of Good Deeds</Link>
+          <Link href="/deeds">Einreichen</Link>
           <Link href="/confirm">Bestätigen</Link>
           <Link href="/profile">Profil</Link>
         </div>

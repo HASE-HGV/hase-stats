@@ -20,7 +20,11 @@ export default async function WallPage() {
 
   const entries = (wall ?? []) as ShameWallRow[];
   const profiles = (people ?? []) as Profile[];
-  const others = profiles.filter((p) => p.id !== user!.id);
+  // Self kommt zuerst, damit "sich selbst beichten" leicht auffindbar ist.
+  const sorted = [
+    ...profiles.filter((p) => p.id === user!.id),
+    ...profiles.filter((p) => p.id !== user!.id),
+  ];
 
   return (
     <>
@@ -28,7 +32,11 @@ export default async function WallPage() {
 
       <div className="card" style={{ marginBottom: 24 }}>
         <h2>Neuen Eintrag hinzufügen</h2>
-        <NewShameForm profiles={others} reporterId={user!.id} />
+        <NewShameForm
+          profiles={sorted}
+          reporterId={user!.id}
+          selfId={user!.id}
+        />
       </div>
 
       {entries.length === 0 ? (

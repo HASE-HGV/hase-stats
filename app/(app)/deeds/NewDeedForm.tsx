@@ -7,19 +7,31 @@ import type { GoodDeedTemplate } from "@/lib/types";
 
 const CUSTOM = "__custom";
 
+type OpenShame = {
+  id: string;
+  reason: string;
+  created_at: string;
+  reporter_username: string;
+};
+
 export default function NewDeedForm({
   templates,
   userId,
+  openShames,
 }: {
   templates: GoodDeedTemplate[];
   userId: string;
+  openShames: OpenShame[];
 }) {
   const router = useRouter();
   const [templateId, setTemplateId] = useState<string>("");
   const [customText, setCustomText] = useState("");
   const [file, setFile] = useState<File | null>(null);
+  const [targetShameId, setTargetShameId] = useState<string>("");
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const hasOpenShames = openShames.length > 0;
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -34,6 +46,10 @@ export default function NewDeedForm({
     }
     if (templateId === CUSTOM && customText.trim().length === 0) {
       setErr("Bitte Beschreibung eingeben.");
+      return;
+    }
+    if (hasOpenShames && !targetShameId) {
+      setErr("Bitte den Wall-of-Shame-Eintrag wählen, der aufgelöst werden soll.");
       return;
     }
     setLoading(true);
@@ -58,6 +74,7 @@ export default function NewDeedForm({
       template_id: templateId === CUSTOM ? null : templateId,
       description: templateId === CUSTOM ? customText.trim() : null,
       photo_url: publicUrl,
+      target_shame_id: targetShameId || null,
     });
     setLoading(false);
     if (error) {
@@ -67,6 +84,7 @@ export default function NewDeedForm({
     setTemplateId("");
     setCustomText("");
     setFile(null);
+    setTargetShameId("");
     router.refresh();
   }
 
@@ -89,6 +107,13 @@ export default function NewDeedForm({
           ))}
           <option value={CUSTOM}>Etwas anderes…</option>
         </select>
+        <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>
+          Fehlt eine Aufgabe? Auf der{" "}
+          <a href="/good-deeds" style={{ textDecoration: "underline" }}>
+            Wall of Good Deeds
+          </a>{" "}
+          anlegen.
+        </div>
       </label>
       {templateId === CUSTOM ? (
         <label>
@@ -102,6 +127,28 @@ export default function NewDeedForm({
             onChange={(e) => setCustomText(e.target.value)}
             placeholder="z.B. Kaffeemaschine entkalkt"
           />
+        </label>
+      ) : null}
+      {hasOpenShames ? (
+        <label>
+          <span className="muted" style={{ fontSize: 13 }}>
+            Welcher Eintrag soll von der Wall of Shame entfernt werden?
+          </span>
+          <select
+            required
+            value={targetShameId}
+            onChange={(e) => setTargetShameId(e.target.value)}
+          >
+            <option value="">— auswählen —</option>
+            {openShames.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.reason} (von @{s.reporter_username})
+              </option>
+            ))}
+          </select>
+          <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>
+            Wird entfernt, sobald zwei andere den Deed bestätigt haben.
+          </div>
         </label>
       ) : null}
       <label>

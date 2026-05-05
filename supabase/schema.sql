@@ -72,6 +72,7 @@ create table if not exists public.good_deed_templates (
   title text not null unique,
   description text,
   active boolean not null default true,
+  created_by uuid references public.profiles(id) on delete set null,
   created_at timestamptz not null default now()
 );
 
@@ -79,10 +80,10 @@ create table if not exists public.good_deed_templates (
 insert into public.good_deed_templates (title, description)
 values
   ('Tisch abwischen', 'Gemeinschaftstisch sauber wischen'),
-  ('Fegen', 'Boden in der K\u00fcche oder im Aufenthaltsbereich fegen'),
-  ('Geschirrsp\u00fcler ausr\u00e4umen', 'Sauberes Geschirr zur\u00fcck ins Regal r\u00e4umen'),
-  ('M\u00fcll rausbringen', 'M\u00fclltonnen leeren'),
-  ('K\u00fchlschrank putzen', 'Abgelaufenes entsorgen und innen wischen')
+  ('Fegen', E'Boden in der K\u00fcche oder im Aufenthaltsbereich fegen'),
+  (E'Geschirrsp\u00fcler ausr\u00e4umen', E'Sauberes Geschirr zur\u00fcck ins Regal r\u00e4umen'),
+  (E'M\u00fcll rausbringen', E'M\u00fclltonnen leeren'),
+  (E'K\u00fchlschrank putzen', 'Abgelaufenes entsorgen und innen wischen')
 on conflict (title) do nothing;
 
 -- ----------------------------------------------------------------------------
@@ -104,6 +105,8 @@ create table if not exists public.good_deeds (
   status good_deed_status not null default 'pending',
   created_at timestamptz not null default now(),
   approved_at timestamptz,
+  -- Optional: which open shame entry this deed resolves on approval.
+  target_shame_id uuid references public.shame_entries(id) on delete set null,
   -- Either template or freetext description must be set.
   constraint deed_has_label check (template_id is not null or (description is not null and char_length(description) > 0))
 );
@@ -178,16 +181,14 @@ begin
       set status = 'approved', approved_at = now()
       where id = new.deed_id;
 
-    -- Resolve the OLDEST active shame entry for the deed's author.
-    update public.shame_entries
-      set resolved_at = now(), resolved_by_deed_id = new.deed_id
-      where id = (
-        select id from public.shame_entries
-        where target_user_id = deed_row.user_id
-          and resolved_at is null
-        order by created_at asc
-        limit 1
-      );
+    -- Resolve the shame entry the deed author selected when submitting.
+    if deed_row.target_shame_id is not null then
+      update public.shame_entries
+        set resolved_at = now(), resolved_by_deed_id = new.deed_id
+        where id = deed_row.target_shame_id
+          and target_user_id = deed_row.user_id
+          and resolved_at is null;
+    end if;
   end if;
 
   return new;
@@ -226,10 +227,20 @@ drop policy if exists "shame insert" on public.shame_entries;
 create policy "shame insert" on public.shame_entries
   for insert to authenticated with check (auth.uid() = reported_by);
 
--- templates: readable by all authed, writable only by service_role (admin through dashboard).
+-- templates: readable by all authed, jeder authed User darf eigene anlegen/updaten.
 drop policy if exists "templates read" on public.good_deed_templates;
 create policy "templates read" on public.good_deed_templates
   for select to authenticated using (active = true);
+
+drop policy if exists "templates insert" on public.good_deed_templates;
+create policy "templates insert" on public.good_deed_templates
+  for insert to authenticated with check (auth.uid() = created_by);
+
+drop policy if exists "templates update own" on public.good_deed_templates;
+create policy "templates update own" on public.good_deed_templates
+  for update to authenticated
+  using (auth.uid() = created_by)
+  with check (auth.uid() = created_by);
 
 -- good_deeds: read all authed; insert only as self; no updates/deletes from client.
 drop policy if exists "deeds read" on public.good_deeds;

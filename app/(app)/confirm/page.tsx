@@ -44,8 +44,9 @@ export default async function ConfirmPage() {
     <>
       <h1>Good Deeds bestätigen</h1>
       <p className="muted" style={{ marginTop: -8 }}>
-        Zwei Bestätigungen aus verschiedenen Personen sind nötig, bevor der
-        älteste offene Eintrag der Person von der Wall of Shame entfernt wird.
+        Zwei Bestätigungen aus verschiedenen Personen sind nötig, bevor der von
+        der einreichenden Person gewählte Eintrag von der Wall of Shame
+        entfernt wird.
       </p>
 
       {error ? <div className="error">{error.message}</div> : null}
