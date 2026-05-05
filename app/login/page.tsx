@@ -11,6 +11,9 @@ export default function LoginPage() {
       <p className="muted" style={{ marginTop: 16 }}>
         Noch kein Account? <Link href="/signup">Registrieren</Link>
       </p>
+      <p className="muted" style={{ marginTop: 4 }}>
+        <Link href="/auth/forgot-password">Passwort vergessen?</Link>
+      </p>
     </main>
   );
 }

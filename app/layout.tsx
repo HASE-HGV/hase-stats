@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import AuthRecoveryWatcher from "./AuthRecoveryWatcher";
 
 export const metadata: Metadata = {
   title: "HASE — Wall of Shame",
@@ -21,7 +22,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="de">
-      <body>{children}</body>
+      <body>
+        <AuthRecoveryWatcher />
+        {children}
+      </body>
     </html>
   );
 }
