@@ -40,7 +40,13 @@ export async function GET() {
   };
 
   if (foreignTemplate) {
-    const { data: updated, error: updateErr } = await supabase
+    // Test exact failing operation: set active=false, then back to true.
+    const { data: u1, error: e1 } = await supabase
+      .from("good_deed_templates")
+      .update({ active: false })
+      .eq("id", foreignTemplate.id)
+      .select();
+    const { data: u2, error: e2 } = await supabase
       .from("good_deed_templates")
       .update({ active: true })
       .eq("id", foreignTemplate.id)
@@ -48,8 +54,13 @@ export async function GET() {
     testUpdate = {
       target_id: foreignTemplate.id,
       target_created_by: foreignTemplate.created_by,
-      rows_returned: updated?.length ?? 0,
-      error: updateErr?.message ?? null,
+      rows_returned: (u1?.length ?? 0) + (u2?.length ?? 0),
+      error:
+        e1?.message
+          ? `set-false: ${e1.message}`
+          : e2?.message
+            ? `set-true: ${e2.message}`
+            : null,
     };
   }
 
