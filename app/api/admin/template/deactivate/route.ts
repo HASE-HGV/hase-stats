@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
 
@@ -18,20 +19,38 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "not authenticated" }, { status: 401 });
   }
 
-  const { data, error } = await supabase
-    .from("good_deed_templates")
-    .update({ active: false })
-    .eq("id", id)
-    .select();
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("is_admin")
+    .eq("id", user.id)
+    .single();
+  const isAdmin = profile?.is_admin === true;
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  const admin = createAdminClient();
+  // Fetch template to confirm creator if not admin.
+  const { data: template } = await admin
+    .from("good_deed_templates")
+    .select("id, created_by")
+    .eq("id", id)
+    .single();
+  if (!template) {
+    return NextResponse.json({ error: "Template nicht gefunden." }, { status: 404 });
   }
-  if (!data || data.length === 0) {
+
+  if (!isAdmin && template.created_by !== user.id) {
     return NextResponse.json(
       { error: "Nicht erlaubt — weder Ersteller noch Admin." },
       { status: 403 }
     );
+  }
+
+  const { error } = await admin
+    .from("good_deed_templates")
+    .update({ active: false })
+    .eq("id", id);
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
   return NextResponse.json({ ok: true });
 }
