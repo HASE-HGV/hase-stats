@@ -17,14 +17,14 @@ export async function GET() {
     .eq("id", user.id)
     .single();
 
-  // Find a template that does NOT belong to me — that's the failing case.
-  const { data: foreignTemplate } = await supabase
+  // Find a template that does NOT belong to me (incl. created_by IS NULL,
+  // which .neq misses because SQL NULL comparisons return NULL).
+  const { data: candidates } = await supabase
     .from("good_deed_templates")
     .select("id, title, created_by, active")
-    .neq("created_by", user.id)
-    .eq("active", true)
-    .limit(1)
-    .maybeSingle();
+    .eq("active", true);
+  const foreignTemplate =
+    candidates?.find((t) => t.created_by !== user.id) ?? null;
 
   // Idempotent test update (set active=true on something already active).
   let testUpdate: {
