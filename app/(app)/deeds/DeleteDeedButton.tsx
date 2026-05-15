@@ -14,10 +14,20 @@ export default function DeleteDeedButton({ id }: { id: string }) {
     setLoading(true);
     setErr(null);
     const supabase = createClient();
-    const { error } = await supabase.from("good_deeds").delete().eq("id", id);
+    const { data, error } = await supabase
+      .from("good_deeds")
+      .delete()
+      .eq("id", id)
+      .select();
     setLoading(false);
     if (error) {
       setErr(error.message);
+      return;
+    }
+    if (!data || data.length === 0) {
+      setErr(
+        "Löschen wurde von der Datenbank stillschweigend abgelehnt — vermutlich fehlen dir Admin-Rechte oder die Migration ist nicht aktiv."
+      );
       return;
     }
     router.refresh();
