@@ -3,6 +3,7 @@ export type Profile = {
   username: string;
   avatar_url: string | null;
   created_at: string;
+  is_admin: boolean;
 };
 
 export type ShameEntry = {

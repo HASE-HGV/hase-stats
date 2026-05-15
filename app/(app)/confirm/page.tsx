@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import ConfirmButton from "./ConfirmButton";
+import DeleteDeedButton from "../deeds/DeleteDeedButton";
 
 export const dynamic = "force-dynamic";
 
@@ -20,17 +21,25 @@ export default async function ConfirmPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { data: deeds, error } = await supabase
-    .from("good_deeds")
-    .select(
-      `id, user_id, photo_url, description, created_at,
-       template:template_id(title),
-       author:user_id(username, avatar_url),
-       confirmations:good_deed_confirmations(confirmed_by)`
-    )
-    .eq("status", "pending")
-    .order("created_at", { ascending: true });
+  const [{ data: deeds, error }, { data: me }] = await Promise.all([
+    supabase
+      .from("good_deeds")
+      .select(
+        `id, user_id, photo_url, description, created_at,
+         template:template_id(title),
+         author:user_id(username, avatar_url),
+         confirmations:good_deed_confirmations(confirmed_by)`
+      )
+      .eq("status", "pending")
+      .order("created_at", { ascending: true }),
+    supabase
+      .from("profiles")
+      .select("is_admin")
+      .eq("id", user!.id)
+      .single(),
+  ]);
 
+  const isAdmin = me?.is_admin === true;
   const rows = (deeds ?? []) as unknown as PendingDeed[];
 
   // Exclude: deeds from me, deeds I already confirmed
@@ -95,9 +104,11 @@ export default async function ConfirmPage() {
                         display: "flex",
                         gap: 12,
                         alignItems: "center",
+                        flexWrap: "wrap",
                       }}
                     >
                       <ConfirmButton deedId={d.id} userId={user!.id} />
+                      {isAdmin ? <DeleteDeedButton id={d.id} /> : null}
                       <span className="muted" style={{ fontSize: 13 }}>
                         {d.confirmations.length} / 2 Bestätigungen ·{" "}
                         {new Date(d.created_at).toLocaleString("de-DE")}

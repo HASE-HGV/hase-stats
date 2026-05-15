@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import type { GoodDeedTemplate } from "@/lib/types";
 import NewDeedForm from "./NewDeedForm";
+import DeleteDeedButton from "./DeleteDeedButton";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +17,7 @@ export default async function DeedsPage() {
     { count: shameCount },
     { data: openShames },
     { data: pendingDeeds },
+    { data: me },
   ] = await Promise.all([
     supabase
       .from("good_deed_templates")
@@ -45,8 +47,14 @@ export default async function DeedsPage() {
       .select("template_id")
       .eq("status", "pending")
       .not("template_id", "is", null),
+    supabase
+      .from("profiles")
+      .select("is_admin")
+      .eq("id", user!.id)
+      .single(),
   ]);
 
+  const isAdmin = me?.is_admin === true;
   const activeShames = shameCount ?? 0;
   const myOpenShames = (openShames ?? []) as {
     id: string;
@@ -113,7 +121,7 @@ export default async function DeedsPage() {
                   : "Wartet auf Bestätigung";
             return (
               <li key={d.id} className="card">
-                <div style={{ display: "flex", gap: 12 }}>
+                <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={d.photo_url}
@@ -125,7 +133,7 @@ export default async function DeedsPage() {
                       borderRadius: 8,
                     }}
                   />
-                  <div>
+                  <div style={{ flex: 1 }}>
                     <strong>{label}</strong>
                     <div style={{ marginTop: 4 }}>
                       <span
@@ -138,6 +146,7 @@ export default async function DeedsPage() {
                       {new Date(d.created_at).toLocaleString("de-DE")}
                     </div>
                   </div>
+                  {isAdmin ? <DeleteDeedButton id={d.id} /> : null}
                 </div>
               </li>
             );

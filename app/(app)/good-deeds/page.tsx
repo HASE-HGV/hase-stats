@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import NewTaskForm from "./NewTaskForm";
 import DeactivateButton from "./DeactivateButton";
+import EditTemplateForm from "./EditTemplateForm";
 
 export const dynamic = "force-dynamic";
 
@@ -22,11 +23,20 @@ export default async function WallOfGoodDeedsPage() {
   // Two separate queries instead of an embedded join — the embedded
   // creator:created_by(username) form depends on PostgREST's schema cache
   // picking up the FK, which can stay stale after migrations.
-  const { data: templateRows, error } = await supabase
-    .from("good_deed_templates")
-    .select("id, title, description, active, created_by")
-    .eq("active", true)
-    .order("title");
+  const [{ data: templateRows, error }, { data: me }] = await Promise.all([
+    supabase
+      .from("good_deed_templates")
+      .select("id, title, description, active, created_by")
+      .eq("active", true)
+      .order("title"),
+    supabase
+      .from("profiles")
+      .select("is_admin")
+      .eq("id", user!.id)
+      .single(),
+  ]);
+
+  const isAdmin = me?.is_admin === true;
 
   const creatorIds = Array.from(
     new Set(
@@ -87,39 +97,49 @@ export default async function WallOfGoodDeedsPage() {
             gap: 10,
           }}
         >
-          {tasks.map((t) => (
-            <li key={t.id} className="card">
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 12,
-                  justifyContent: "space-between",
-                  flexWrap: "wrap",
-                }}
-              >
-                <div style={{ minWidth: 0, flex: 1 }}>
-                  <strong style={{ fontSize: 17 }}>{t.title}</strong>
-                  {t.description ? (
-                    <div className="muted" style={{ marginTop: 4 }}>
-                      {t.description}
-                    </div>
-                  ) : null}
-                  {t.creator ? (
-                    <div
-                      className="muted"
-                      style={{ fontSize: 12, marginTop: 6 }}
-                    >
-                      hinzugefügt von @{t.creator.username}
+          {tasks.map((t) => {
+            const canEdit = t.created_by === user!.id || isAdmin;
+            return (
+              <li key={t.id} className="card">
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 12,
+                    justifyContent: "space-between",
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <strong style={{ fontSize: 17 }}>{t.title}</strong>
+                    {t.description ? (
+                      <div className="muted" style={{ marginTop: 4 }}>
+                        {t.description}
+                      </div>
+                    ) : null}
+                    {t.creator ? (
+                      <div
+                        className="muted"
+                        style={{ fontSize: 12, marginTop: 6 }}
+                      >
+                        hinzugefügt von @{t.creator.username}
+                      </div>
+                    ) : null}
+                  </div>
+                  {canEdit ? (
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      <EditTemplateForm
+                        id={t.id}
+                        initialTitle={t.title}
+                        initialDescription={t.description}
+                      />
+                      <DeactivateButton id={t.id} />
                     </div>
                   ) : null}
                 </div>
-                {t.created_by === user!.id ? (
-                  <DeactivateButton id={t.id} />
-                ) : null}
-              </div>
-            </li>
-          ))}
+              </li>
+            );
+          })}
         </ul>
       )}
     </>

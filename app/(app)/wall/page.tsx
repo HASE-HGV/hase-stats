@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import type { Profile, ShameWallRow } from "@/lib/types";
 import NewShameForm from "./NewShameForm";
+import DeleteShameButton from "./DeleteShameButton";
 
 export const dynamic = "force-dynamic";
 
@@ -10,14 +11,22 @@ export default async function WallPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const [{ data: wall }, { data: people }] = await Promise.all([
+  const [{ data: wall }, { data: people }, { data: me }] = await Promise.all([
     supabase
       .from("shame_wall")
       .select("*")
       .order("created_at", { ascending: false }),
-    supabase.from("profiles").select("id, username, avatar_url, created_at"),
+    supabase
+      .from("profiles")
+      .select("id, username, avatar_url, created_at, is_admin"),
+    supabase
+      .from("profiles")
+      .select("is_admin")
+      .eq("id", user!.id)
+      .single(),
   ]);
 
+  const isAdmin = me?.is_admin === true;
   const entries = (wall ?? []) as ShameWallRow[];
   const profiles = (people ?? []) as Profile[];
   // Self kommt zuerst, damit "sich selbst beichten" leicht auffindbar ist.
@@ -102,6 +111,9 @@ export default async function WallPage() {
                   </div>
                   <p style={{ margin: "8px 0 0", fontSize: 16 }}>{e.reason}</p>
                 </div>
+                {isAdmin ? (
+                  <DeleteShameButton id={e.id} />
+                ) : null}
               </div>
             </li>
           ))}
