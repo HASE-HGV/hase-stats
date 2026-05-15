@@ -17,19 +17,49 @@ export async function GET() {
     .eq("id", user.id)
     .single();
 
-  // Try a benign UPDATE on a fake row to surface what the RLS layer thinks.
-  const { error: testUpdateErr } = await supabase
+  // Find a template that does NOT belong to me — that's the failing case.
+  const { data: foreignTemplate } = await supabase
     .from("good_deed_templates")
-    .update({ active: true })
-    .eq("id", "00000000-0000-0000-0000-000000000000");
+    .select("id, title, created_by, active")
+    .neq("created_by", user.id)
+    .eq("active", true)
+    .limit(1)
+    .maybeSingle();
+
+  // Idempotent test update (set active=true on something already active).
+  let testUpdate: {
+    target_id: string | null;
+    target_created_by: string | null;
+    rows_returned: number;
+    error: string | null;
+  } = {
+    target_id: null,
+    target_created_by: null,
+    rows_returned: 0,
+    error: "no foreign template found to test against",
+  };
+
+  if (foreignTemplate) {
+    const { data: updated, error: updateErr } = await supabase
+      .from("good_deed_templates")
+      .update({ active: true })
+      .eq("id", foreignTemplate.id)
+      .select();
+    testUpdate = {
+      target_id: foreignTemplate.id,
+      target_created_by: foreignTemplate.created_by,
+      rows_returned: updated?.length ?? 0,
+      error: updateErr?.message ?? null,
+    };
+  }
 
   return NextResponse.json({
     auth_user_id: user.id,
     auth_email: user.email,
     profile_row: profile,
     profile_fetch_error: profileErr?.message ?? null,
-    test_update_error: testUpdateErr?.message ?? null,
     matches: profile?.id === user.id,
     is_admin_in_table: profile?.is_admin === true,
+    test_update_on_foreign_template: testUpdate,
   });
 }
