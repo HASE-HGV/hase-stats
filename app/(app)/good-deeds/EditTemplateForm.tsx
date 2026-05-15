@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 
 type Props = {
   id: string;
@@ -26,21 +25,19 @@ export default function EditTemplateForm({
     e.preventDefault();
     setErr(null);
     setLoading(true);
-    const supabase = createClient();
-    const { error } = await supabase
-      .from("good_deed_templates")
-      .update({
+    const res = await fetch("/api/admin/template/edit", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        id,
         title: title.trim(),
         description: description.trim() || null,
-      })
-      .eq("id", id);
+      }),
+    });
     setLoading(false);
-    if (error) {
-      if (error.code === "23505") {
-        setErr("Eine Aufgabe mit diesem Titel existiert schon.");
-      } else {
-        setErr(error.message);
-      }
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({ error: res.statusText }));
+      setErr(body.error ?? "Fehler beim Speichern.");
       return;
     }
     setOpen(false);

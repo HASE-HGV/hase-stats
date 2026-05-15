@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 
 export default function DeactivateButton({ id }: { id: string }) {
   const router = useRouter();
@@ -15,21 +14,15 @@ export default function DeactivateButton({ id }: { id: string }) {
     }
     setLoading(true);
     setErr(null);
-    const supabase = createClient();
-    const { data, error } = await supabase
-      .from("good_deed_templates")
-      .update({ active: false })
-      .eq("id", id)
-      .select();
+    const res = await fetch("/api/admin/template/deactivate", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ id }),
+    });
     setLoading(false);
-    if (error) {
-      setErr(error.message);
-      return;
-    }
-    if (!data || data.length === 0) {
-      setErr(
-        "Entfernen wurde von der Datenbank stillschweigend abgelehnt — du bist weder Ersteller noch Admin (oder die Admin-Migration ist nicht aktiv)."
-      );
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({ error: res.statusText }));
+      setErr(body.error ?? "Fehler beim Entfernen.");
       return;
     }
     router.refresh();

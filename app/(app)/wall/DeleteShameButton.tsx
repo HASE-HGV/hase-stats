@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 
 export default function DeleteShameButton({ id }: { id: string }) {
   const router = useRouter();
@@ -13,21 +12,15 @@ export default function DeleteShameButton({ id }: { id: string }) {
     if (!confirm("Diesen Shame-Eintrag dauerhaft löschen?")) return;
     setLoading(true);
     setErr(null);
-    const supabase = createClient();
-    const { data, error } = await supabase
-      .from("shame_entries")
-      .delete()
-      .eq("id", id)
-      .select();
+    const res = await fetch("/api/admin/shame/delete", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ id }),
+    });
     setLoading(false);
-    if (error) {
-      setErr(error.message);
-      return;
-    }
-    if (!data || data.length === 0) {
-      setErr(
-        "Löschen wurde von der Datenbank stillschweigend abgelehnt — vermutlich fehlen dir Admin-Rechte oder die Migration ist nicht aktiv."
-      );
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({ error: res.statusText }));
+      setErr(body.error ?? "Fehler beim Löschen.");
       return;
     }
     router.refresh();
