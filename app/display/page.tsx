@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
-import type { ShameWallRow, QuoteRow } from "@/lib/types";
+import type { Profile, ShameWallRow, QuoteRow } from "@/lib/types";
+import { toDisplayQuote } from "@/lib/quotes";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -10,7 +11,7 @@ export const revalidate = 30;
 
 export default async function DisplayPage() {
   const supabase = await createClient();
-  const [{ data }, { data: quoteData }] = await Promise.all([
+  const [{ data }, { data: quoteData }, { data: people }] = await Promise.all([
     supabase
       .from("shame_wall")
       .select("*")
@@ -21,10 +22,17 @@ export default async function DisplayPage() {
       .select("*")
       .order("created_at", { ascending: false })
       .limit(30),
+    supabase.from("profiles").select("id, username, avatar_url"),
   ]);
 
   const rows = (data ?? []) as ShameWallRow[];
-  const quotes = (quoteData ?? []) as QuoteRow[];
+  const quoteRows = (quoteData ?? []) as QuoteRow[];
+  const profileMap = new Map(
+    ((people ?? []) as Pick<Profile, "id" | "username" | "avatar_url">[]).map(
+      (p) => [p.id, { username: p.username, avatar_url: p.avatar_url }]
+    )
+  );
+  const quotes = quoteRows.map((q) => toDisplayQuote(q, profileMap));
 
   return (
     <div

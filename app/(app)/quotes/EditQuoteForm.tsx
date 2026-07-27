@@ -3,60 +3,80 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { format, parseISO } from "date-fns";
-import type { Profile } from "@/lib/types";
+import type { Profile, QuoteLine } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import DatePicker from "@/components/DatePicker";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-
-const OTHER = "__other__";
+import QuoteLinesEditor, {
+  buildLinesPayload,
+  emptyLine,
+  OTHER,
+  type LineDraft,
+} from "@/components/QuoteLinesEditor";
 
 type Props = {
   id: string;
-  initialText: string;
+  initialText: string | null;
+  initialLines: QuoteLine[] | null;
   initialAuthorProfileId: string | null;
   initialAuthorName: string | null;
   initialSaidOn: string | null;
   profiles: Profile[];
+  selfId: string;
 };
+
+function toDrafts(
+  lines: QuoteLine[] | null,
+  text: string | null,
+  authorProfileId: string | null,
+  authorName: string | null
+): LineDraft[] {
+  if (lines && lines.length > 0) {
+    return lines.map((l) => ({
+      authorSel: l.author_profile_id ?? (l.author_name ? OTHER : ""),
+      authorName: l.author_name ?? "",
+      text: l.text,
+    }));
+  }
+  // Alt-Zitat -> eine Zeile.
+  return [
+    {
+      authorSel: authorProfileId ?? (authorName ? OTHER : ""),
+      authorName: authorName ?? "",
+      text: text ?? "",
+    },
+  ];
+}
 
 export default function EditQuoteForm({
   id,
   initialText,
+  initialLines,
   initialAuthorProfileId,
   initialAuthorName,
   initialSaidOn,
   profiles,
+  selfId,
 }: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [text, setText] = useState(initialText);
-  const [authorSel, setAuthorSel] = useState<string>(
-    initialAuthorProfileId ?? (initialAuthorName ? OTHER : "")
+  const [lines, setLines] = useState<LineDraft[]>(() =>
+    toDrafts(initialLines, initialText, initialAuthorProfileId, initialAuthorName)
   );
-  const [authorName, setAuthorName] = useState(initialAuthorName ?? "");
   const [saidOn, setSaidOn] = useState<Date | undefined>(
     initialSaidOn ? parseISO(initialSaidOn) : undefined
   );
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  const items = [
-    ...profiles.map((p) => ({ value: p.id, label: `@${p.username}` })),
-    { value: OTHER, label: "Andere Person (Name eingeben)…" },
-  ];
-
   function reset() {
-    setText(initialText);
-    setAuthorSel(initialAuthorProfileId ?? (initialAuthorName ? OTHER : ""));
-    setAuthorName(initialAuthorName ?? "");
+    setLines(
+      toDrafts(
+        initialLines,
+        initialText,
+        initialAuthorProfileId,
+        initialAuthorName
+      )
+    );
     setSaidOn(initialSaidOn ? parseISO(initialSaidOn) : undefined);
     setErr(null);
   }
@@ -65,18 +85,9 @@ export default function EditQuoteForm({
     e.preventDefault();
     setErr(null);
 
-    const quote = text.trim();
-    if (!quote) {
-      setErr("Zitat darf nicht leer sein.");
-      return;
-    }
-    if (!authorSel) {
-      setErr("Bitte angeben, wer es gesagt hat.");
-      return;
-    }
-    const freetext = authorName.trim();
-    if (authorSel === OTHER && !freetext) {
-      setErr("Bitte den Namen der Person eingeben.");
+    const { payload, error } = buildLinesPayload(lines);
+    if (error || !payload) {
+      setErr(error ?? "Bitte das Zitat ausfüllen.");
       return;
     }
 
@@ -86,9 +97,7 @@ export default function EditQuoteForm({
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         id,
-        text: quote,
-        author_profile_id: authorSel === OTHER ? null : authorSel,
-        author_name: authorSel === OTHER ? freetext : null,
+        lines: payload,
         said_on: saidOn ? format(saidOn, "yyyy-MM-dd") : null,
       }),
     });
@@ -107,7 +116,10 @@ export default function EditQuoteForm({
       <Button
         variant="outline"
         size="sm"
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          if (lines.length === 0) setLines([emptyLine()]);
+          setOpen(true);
+        }}
         title="Admin: Zitat bearbeiten"
       >
         Bearbeiten
@@ -117,41 +129,12 @@ export default function EditQuoteForm({
 
   return (
     <form onSubmit={onSubmit} className="mt-2 grid w-full gap-2">
-      <Textarea
-        required
-        minLength={1}
-        maxLength={1000}
-        rows={3}
-        value={text}
-        onChange={(e) => setText(e.target.value)}
+      <QuoteLinesEditor
+        profiles={profiles}
+        selfId={selfId}
+        lines={lines}
+        onChange={setLines}
       />
-      <Select
-        items={items}
-        value={authorSel || null}
-        onValueChange={(v) => setAuthorSel((v as string) ?? "")}
-      >
-        <SelectTrigger className="w-full">
-          <SelectValue placeholder="— auswählen —" />
-        </SelectTrigger>
-        <SelectContent>
-          {items.map((it) => (
-            <SelectItem key={it.value} value={it.value}>
-              {it.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      {authorSel === OTHER ? (
-        <Input
-          type="text"
-          required
-          minLength={1}
-          maxLength={100}
-          value={authorName}
-          onChange={(e) => setAuthorName(e.target.value)}
-          placeholder="Name der Person"
-        />
-      ) : null}
       <DatePicker
         value={saidOn}
         onChange={setSaidOn}

@@ -7,18 +7,12 @@ import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import DatePicker from "@/components/DatePicker";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-
-const OTHER = "__other__";
+import QuoteLinesEditor, {
+  buildLinesPayload,
+  emptyLine,
+  type LineDraft,
+} from "@/components/QuoteLinesEditor";
 
 export default function NewQuoteForm({
   profiles,
@@ -30,58 +24,34 @@ export default function NewQuoteForm({
   selfId: string;
 }) {
   const router = useRouter();
-  const [text, setText] = useState("");
-  // authorSel = Profil-ID, "" (noch nichts) oder OTHER (Freitext)
-  const [authorSel, setAuthorSel] = useState<string>("");
-  const [authorName, setAuthorName] = useState("");
+  const [lines, setLines] = useState<LineDraft[]>([emptyLine()]);
   const [saidOn, setSaidOn] = useState<Date | undefined>(undefined);
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-
-  const items = [
-    ...profiles.map((p) => ({
-      value: p.id,
-      label: p.id === selfId ? `@${p.username} (ich selbst)` : `@${p.username}`,
-    })),
-    { value: OTHER, label: "Andere Person (Name eingeben)…" },
-  ];
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setErr(null);
 
-    const quote = text.trim();
-    if (!quote) {
-      setErr("Bitte ein Zitat eingeben.");
-      return;
-    }
-    if (!authorSel) {
-      setErr("Bitte angeben, wer es gesagt hat.");
-      return;
-    }
-    const freetext = authorName.trim();
-    if (authorSel === OTHER && !freetext) {
-      setErr("Bitte den Namen der Person eingeben.");
+    const { payload, error } = buildLinesPayload(lines);
+    if (error || !payload) {
+      setErr(error ?? "Bitte das Zitat ausfüllen.");
       return;
     }
 
     setLoading(true);
     const supabase = createClient();
-    const { error } = await supabase.from("quotes").insert({
-      text: quote,
+    const { error: dbError } = await supabase.from("quotes").insert({
       added_by: addedBy,
-      author_profile_id: authorSel === OTHER ? null : authorSel,
-      author_name: authorSel === OTHER ? freetext : null,
+      lines: payload,
       said_on: saidOn ? format(saidOn, "yyyy-MM-dd") : null,
     });
     setLoading(false);
-    if (error) {
-      setErr(error.message);
+    if (dbError) {
+      setErr(dbError.message);
       return;
     }
-    setText("");
-    setAuthorSel("");
-    setAuthorName("");
+    setLines([emptyLine()]);
     setSaidOn(undefined);
     router.refresh();
   }
@@ -89,51 +59,18 @@ export default function NewQuoteForm({
   return (
     <form onSubmit={onSubmit} className="grid gap-3">
       <div className="grid gap-1.5">
-        <Label>Zitat</Label>
-        <Textarea
-          required
-          minLength={1}
-          maxLength={1000}
-          rows={3}
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="z.B. „Das haben wir schon immer so gemacht.“"
+        <Label>Zitat / Dialog</Label>
+        <p className="text-xs text-muted-foreground">
+          Eine Zeile pro Sprecher. Für einen Wortwechsel mehrere Zeilen
+          hinzufügen und jeweils die Person wählen.
+        </p>
+        <QuoteLinesEditor
+          profiles={profiles}
+          selfId={selfId}
+          lines={lines}
+          onChange={setLines}
         />
       </div>
-      <div className="grid gap-1.5">
-        <Label>Wer hat&apos;s gesagt?</Label>
-        <Select
-          items={items}
-          value={authorSel || null}
-          onValueChange={(v) => setAuthorSel((v as string) ?? "")}
-        >
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="— auswählen —" />
-          </SelectTrigger>
-          <SelectContent>
-            {items.map((it) => (
-              <SelectItem key={it.value} value={it.value}>
-                {it.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      {authorSel === OTHER ? (
-        <div className="grid gap-1.5">
-          <Label htmlFor="author-name">Name der Person</Label>
-          <Input
-            id="author-name"
-            type="text"
-            required
-            minLength={1}
-            maxLength={100}
-            value={authorName}
-            onChange={(e) => setAuthorName(e.target.value)}
-            placeholder="z.B. Chef, Kunde, Praktikant …"
-          />
-        </div>
-      ) : null}
       <div className="grid gap-1.5">
         <Label htmlFor="said-on">Wann gesagt? (optional)</Label>
         <DatePicker

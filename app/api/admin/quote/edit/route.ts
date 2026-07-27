@@ -1,40 +1,59 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import type { QuoteLine } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
+
+type RawLine = {
+  author_profile_id?: string | null;
+  author_name?: string | null;
+  text?: string | null;
+};
+
+function sanitizeLines(input: unknown): QuoteLine[] | null {
+  if (!Array.isArray(input) || input.length === 0) return null;
+  const out: QuoteLine[] = [];
+  for (const raw of input as RawLine[]) {
+    const text = typeof raw?.text === "string" ? raw.text.trim() : "";
+    if (!text || text.length > 500) return null;
+    const profileId =
+      typeof raw?.author_profile_id === "string" && raw.author_profile_id
+        ? raw.author_profile_id
+        : null;
+    const name =
+      typeof raw?.author_name === "string" && raw.author_name.trim().length > 0
+        ? raw.author_name.trim().slice(0, 100)
+        : null;
+    if (!profileId && !name) return null;
+    out.push({
+      author_profile_id: profileId,
+      author_name: profileId ? null : name,
+      text,
+    });
+  }
+  return out;
+}
 
 export async function POST(req: Request) {
   const body = (await req.json().catch(() => null)) as {
     id?: string;
-    text?: string;
-    author_profile_id?: string | null;
-    author_name?: string | null;
+    lines?: unknown;
     said_on?: string | null;
   } | null;
 
   if (!body?.id || typeof body.id !== "string") {
     return NextResponse.json({ error: "missing id" }, { status: 400 });
   }
-  const text = typeof body.text === "string" ? body.text.trim() : "";
-  if (!text) {
-    return NextResponse.json({ error: "text required" }, { status: 400 });
-  }
 
-  const authorProfileId =
-    typeof body.author_profile_id === "string" && body.author_profile_id
-      ? body.author_profile_id
-      : null;
-  const authorName =
-    typeof body.author_name === "string" && body.author_name.trim().length > 0
-      ? body.author_name.trim()
-      : null;
-  if (!authorProfileId && !authorName) {
+  const lines = sanitizeLines(body.lines);
+  if (!lines) {
     return NextResponse.json(
-      { error: "Bitte einen Urheber angeben." },
+      { error: "Bitte für jede Zeile Person und Text angeben." },
       { status: 400 }
     );
   }
+
   const saidOn =
     typeof body.said_on === "string" && /^\d{4}-\d{2}-\d{2}$/.test(body.said_on)
       ? body.said_on
@@ -64,9 +83,11 @@ export async function POST(req: Request) {
   const { error } = await admin
     .from("quotes")
     .update({
-      text,
-      author_profile_id: authorProfileId,
-      author_name: authorName,
+      lines,
+      // Alt-Felder leeren, das Zitat ist jetzt zeilenbasiert.
+      text: null,
+      author_profile_id: null,
+      author_name: null,
       said_on: saidOn,
     })
     .eq("id", body.id);

@@ -348,16 +348,16 @@ grant select on public.shame_wall to anon, authenticated;
 -- ----------------------------------------------------------------------------
 create table if not exists public.quotes (
   id uuid primary key default gen_random_uuid(),
-  text text not null check (char_length(text) between 1 and 1000),
+  -- text: Alt-Zitate (einzeiliger Text). Zeilenbasierte Dialoge stehen in lines.
+  text text check (text is null or char_length(text) between 1 and 1000),
+  -- lines: Array von { author_profile_id, author_name, text } (mehrzeilige Dialoge).
+  lines jsonb,
   author_profile_id uuid references public.profiles(id) on delete set null,
   author_name text check (author_name is null or char_length(author_name) between 1 and 100),
   added_by uuid not null references public.profiles(id) on delete cascade,
   created_at timestamptz not null default now(),
   said_on date,
-  constraint quote_has_author check (
-    author_profile_id is not null
-    or (author_name is not null and char_length(author_name) > 0)
-  )
+  constraint quote_has_content check (text is not null or lines is not null)
 );
 
 create index if not exists quotes_created_idx on public.quotes (created_at desc);
@@ -393,6 +393,7 @@ create or replace view public.quotes_view as
   select
     q.id,
     q.text,
+    q.lines,
     q.created_at,
     q.said_on,
     q.author_profile_id,

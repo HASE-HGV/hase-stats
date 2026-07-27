@@ -47,9 +47,17 @@ export type GoodDeed = {
   approved_at: string | null;
 };
 
+// Eine Zeile eines (evtl. mehrzeiligen) Zitats mit eigenem Sprecher.
+export type QuoteLine = {
+  author_profile_id: string | null;
+  author_name: string | null;
+  text: string;
+};
+
 export type Quote = {
   id: string;
-  text: string;
+  text: string | null;
+  lines: QuoteLine[] | null;
   author_profile_id: string | null;
   author_name: string | null;
   added_by: string;
@@ -60,14 +68,15 @@ export type Quote = {
 // Zeile aus der quotes_view (mit aufgelösten Usernamen für die Anzeige).
 export type QuoteRow = {
   id: string;
-  text: string;
+  text: string | null;
+  lines: QuoteLine[] | null;
   created_at: string;
   said_on: string | null;
   author_profile_id: string | null;
   author_username: string | null;
   author_avatar_url: string | null;
   author_name: string | null;
-  author_display: string;
+  author_display: string | null;
   added_by: string;
   added_by_username: string;
 };
