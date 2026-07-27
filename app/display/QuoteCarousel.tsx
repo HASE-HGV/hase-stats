@@ -33,8 +33,8 @@ export default function QuoteCarousel({ quotes }: { quotes: QuoteRow[] }) {
         {quotes.map((q) => (
           <CarouselItem key={q.id}>
             <Card className="h-[30dvh] justify-center">
-              <CardContent className="flex h-full flex-col items-center justify-center gap-4 text-center">
-                <blockquote className="line-clamp-4 max-w-4xl text-2xl leading-snug font-medium text-balance italic md:text-3xl">
+              <CardContent className="flex h-full flex-col items-center justify-center gap-4 px-[7%] text-center">
+                <blockquote className="line-clamp-4 max-w-full pr-[0.15em] text-2xl leading-snug font-medium text-pretty italic md:text-3xl">
                   „{q.text}“
                 </blockquote>
                 <div className="flex items-center gap-3">
