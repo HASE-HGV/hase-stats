@@ -17,6 +17,12 @@ import DeleteQuoteButton from "./DeleteQuoteButton";
 
 export const dynamic = "force-dynamic";
 
+// "2024-03-15" -> "15.03.2024" (ohne Zeitzonen-Verschiebung).
+function formatDay(iso: string) {
+  const [y, m, d] = iso.split("-");
+  return `${d}.${m}.${y}`;
+}
+
 export default async function QuotesPage() {
   const supabase = await createClient();
   const {
@@ -93,6 +99,11 @@ export default async function QuotesPage() {
                           ? `@${q.author_username}`
                           : q.author_display}
                       </strong>
+                      {q.said_on ? (
+                        <span className="text-[13px] text-muted-foreground">
+                          gesagt am {formatDay(q.said_on)}
+                        </span>
+                      ) : null}
                       <span className="text-[13px] text-muted-foreground">
                         hinzugefügt von @{q.added_by_username} ·{" "}
                         {new Date(q.created_at).toLocaleString("de-DE")}
@@ -104,6 +115,7 @@ export default async function QuotesPage() {
                         initialText={q.text}
                         initialAuthorProfileId={q.author_profile_id}
                         initialAuthorName={q.author_name}
+                        initialSaidOn={q.said_on}
                         profiles={sorted}
                       />
                     ) : null}

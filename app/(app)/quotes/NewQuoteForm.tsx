@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { format } from "date-fns";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/lib/types";
 import { Button } from "@/components/ui/button";
+import DatePicker from "@/components/DatePicker";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -32,6 +34,7 @@ export default function NewQuoteForm({
   // authorSel = Profil-ID, "" (noch nichts) oder OTHER (Freitext)
   const [authorSel, setAuthorSel] = useState<string>("");
   const [authorName, setAuthorName] = useState("");
+  const [saidOn, setSaidOn] = useState<Date | undefined>(undefined);
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -69,6 +72,7 @@ export default function NewQuoteForm({
       added_by: addedBy,
       author_profile_id: authorSel === OTHER ? null : authorSel,
       author_name: authorSel === OTHER ? freetext : null,
+      said_on: saidOn ? format(saidOn, "yyyy-MM-dd") : null,
     });
     setLoading(false);
     if (error) {
@@ -78,6 +82,7 @@ export default function NewQuoteForm({
     setText("");
     setAuthorSel("");
     setAuthorName("");
+    setSaidOn(undefined);
     router.refresh();
   }
 
@@ -129,6 +134,15 @@ export default function NewQuoteForm({
           />
         </div>
       ) : null}
+      <div className="grid gap-1.5">
+        <Label htmlFor="said-on">Wann gesagt? (optional)</Label>
+        <DatePicker
+          id="said-on"
+          value={saidOn}
+          onChange={setSaidOn}
+          placeholder="Datum wählen"
+        />
+      </div>
       <div>
         <Button type="submit" size="lg" disabled={loading}>
           {loading ? "Speichere…" : "Zitat hinzufügen"}

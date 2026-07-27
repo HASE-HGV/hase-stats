@@ -10,6 +10,7 @@ export async function POST(req: Request) {
     text?: string;
     author_profile_id?: string | null;
     author_name?: string | null;
+    said_on?: string | null;
   } | null;
 
   if (!body?.id || typeof body.id !== "string") {
@@ -34,6 +35,10 @@ export async function POST(req: Request) {
       { status: 400 }
     );
   }
+  const saidOn =
+    typeof body.said_on === "string" && /^\d{4}-\d{2}-\d{2}$/.test(body.said_on)
+      ? body.said_on
+      : null;
 
   const supabase = await createClient();
   const {
@@ -62,6 +67,7 @@ export async function POST(req: Request) {
       text,
       author_profile_id: authorProfileId,
       author_name: authorName,
+      said_on: saidOn,
     })
     .eq("id", body.id);
 

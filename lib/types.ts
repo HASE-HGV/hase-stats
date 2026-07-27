@@ -54,6 +54,7 @@ export type Quote = {
   author_name: string | null;
   added_by: string;
   created_at: string;
+  said_on: string | null;
 };
 
 // Zeile aus der quotes_view (mit aufgelösten Usernamen für die Anzeige).
@@ -61,6 +62,7 @@ export type QuoteRow = {
   id: string;
   text: string;
   created_at: string;
+  said_on: string | null;
   author_profile_id: string | null;
   author_username: string | null;
   author_avatar_url: string | null;

@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { format, parseISO } from "date-fns";
 import type { Profile } from "@/lib/types";
 import { Button } from "@/components/ui/button";
+import DatePicker from "@/components/DatePicker";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -21,6 +23,7 @@ type Props = {
   initialText: string;
   initialAuthorProfileId: string | null;
   initialAuthorName: string | null;
+  initialSaidOn: string | null;
   profiles: Profile[];
 };
 
@@ -29,6 +32,7 @@ export default function EditQuoteForm({
   initialText,
   initialAuthorProfileId,
   initialAuthorName,
+  initialSaidOn,
   profiles,
 }: Props) {
   const router = useRouter();
@@ -38,6 +42,9 @@ export default function EditQuoteForm({
     initialAuthorProfileId ?? (initialAuthorName ? OTHER : "")
   );
   const [authorName, setAuthorName] = useState(initialAuthorName ?? "");
+  const [saidOn, setSaidOn] = useState<Date | undefined>(
+    initialSaidOn ? parseISO(initialSaidOn) : undefined
+  );
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -50,6 +57,7 @@ export default function EditQuoteForm({
     setText(initialText);
     setAuthorSel(initialAuthorProfileId ?? (initialAuthorName ? OTHER : ""));
     setAuthorName(initialAuthorName ?? "");
+    setSaidOn(initialSaidOn ? parseISO(initialSaidOn) : undefined);
     setErr(null);
   }
 
@@ -81,6 +89,7 @@ export default function EditQuoteForm({
         text: quote,
         author_profile_id: authorSel === OTHER ? null : authorSel,
         author_name: authorSel === OTHER ? freetext : null,
+        said_on: saidOn ? format(saidOn, "yyyy-MM-dd") : null,
       }),
     });
     setLoading(false);
@@ -143,6 +152,11 @@ export default function EditQuoteForm({
           placeholder="Name der Person"
         />
       ) : null}
+      <DatePicker
+        value={saidOn}
+        onChange={setSaidOn}
+        placeholder="Wann gesagt? (optional)"
+      />
       <div className="flex gap-2">
         <Button type="submit" size="sm" disabled={loading}>
           {loading ? "…" : "Speichern"}

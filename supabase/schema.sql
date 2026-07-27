@@ -353,6 +353,7 @@ create table if not exists public.quotes (
   author_name text check (author_name is null or char_length(author_name) between 1 and 100),
   added_by uuid not null references public.profiles(id) on delete cascade,
   created_at timestamptz not null default now(),
+  said_on date,
   constraint quote_has_author check (
     author_profile_id is not null
     or (author_name is not null and char_length(author_name) > 0)
@@ -393,6 +394,7 @@ create or replace view public.quotes_view as
     q.id,
     q.text,
     q.created_at,
+    q.said_on,
     q.author_profile_id,
     ap.username     as author_username,
     ap.avatar_url   as author_avatar_url,

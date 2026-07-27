@@ -5,6 +5,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 // Re-render every 30s when visited; also client auto-reloads below.
 export const revalidate = 30;
 
+// "2024-03-15" -> "15.03.2024" (ohne Zeitzonen-Verschiebung).
+function formatDay(iso: string) {
+  const [y, m, d] = iso.split("-");
+  return `${d}.${m}.${y}`;
+}
+
 export default async function DisplayPage() {
   const supabase = await createClient();
   const [{ data }, { data: quoteData }] = await Promise.all([
@@ -113,6 +119,7 @@ export default async function DisplayPage() {
                       : q.author_display}
                   </div>
                   <div className="text-[clamp(12px,1.4vw,16px)] text-muted-foreground">
+                    {q.said_on ? `gesagt am ${formatDay(q.said_on)} · ` : ""}
                     hinzugefügt von @{q.added_by_username}
                   </div>
                 </div>
