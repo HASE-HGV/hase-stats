@@ -1,15 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
 import type { ShameWallRow, QuoteRow } from "@/lib/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Card, CardContent } from "@/components/ui/card";
+import QuoteCarousel from "./QuoteCarousel";
 
 // Re-render every 30s when visited; also client auto-reloads below.
 export const revalidate = 30;
-
-// "2024-03-15" -> "15.03.2024" (ohne Zeitzonen-Verschiebung).
-function formatDay(iso: string) {
-  const [y, m, d] = iso.split("-");
-  return `${d}.${m}.${y}`;
-}
 
 export default async function DisplayPage() {
   const supabase = await createClient();
@@ -23,7 +19,7 @@ export default async function DisplayPage() {
       .from("quotes_view")
       .select("*")
       .order("created_at", { ascending: false })
-      .limit(12),
+      .limit(30),
   ]);
 
   const rows = (data ?? []) as ShameWallRow[];
@@ -48,37 +44,38 @@ export default async function DisplayPage() {
       </header>
 
       {rows.length === 0 ? (
-        <div className="flex min-h-[70vh] flex-col items-center justify-center gap-6 text-center text-5xl text-primary">
+        <div className="flex min-h-[40vh] flex-col items-center justify-center gap-6 text-center text-5xl text-primary">
           <div className="text-[120px]">🎉</div>
           <div>Niemand ist gerade auf der Wall of Shame.</div>
         </div>
       ) : (
         <ul className="grid list-none grid-cols-[repeat(auto-fill,minmax(min(480px,100%),1fr))] gap-5 p-0">
           {rows.map((r) => (
-            <li
-              key={r.id}
-              className="flex items-start gap-5 rounded-2xl border border-destructive/25 bg-card p-[22px]"
-            >
-              <Avatar className="size-[clamp(64px,11vw,104px)] ring-2 ring-destructive">
-                {r.target_avatar_url ? (
-                  <AvatarImage src={r.target_avatar_url} alt="" />
-                ) : null}
-                <AvatarFallback className="text-4xl font-extrabold">
-                  {r.target_username[0]?.toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <div className="min-w-0 flex-1">
-                <div className="mb-1.5 text-[clamp(22px,3.5vw,36px)] font-extrabold">
-                  @{r.target_username}
-                </div>
-                <div className="mb-2.5 text-[clamp(16px,2.2vw,24px)] leading-snug">
-                  {r.reason}
-                </div>
-                <div className="text-[clamp(12px,1.4vw,16px)] text-muted-foreground">
-                  von @{r.reporter_username} ·{" "}
-                  {new Date(r.created_at).toLocaleString("de-DE")}
-                </div>
-              </div>
+            <li key={r.id}>
+              <Card className="h-full gap-0 rounded-2xl border border-destructive/25 py-0 ring-0">
+                <CardContent className="flex items-start gap-5 p-5 sm:p-[22px]">
+                  <Avatar className="size-[clamp(64px,11vw,104px)] ring-2 ring-destructive">
+                    {r.target_avatar_url ? (
+                      <AvatarImage src={r.target_avatar_url} alt="" />
+                    ) : null}
+                    <AvatarFallback className="text-4xl font-extrabold">
+                      {r.target_username[0]?.toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0 flex-1">
+                    <div className="mb-1.5 text-[clamp(22px,3.5vw,36px)] font-extrabold">
+                      @{r.target_username}
+                    </div>
+                    <div className="mb-2.5 text-[clamp(16px,2.2vw,24px)] leading-snug">
+                      {r.reason}
+                    </div>
+                    <div className="text-[clamp(12px,1.4vw,16px)] text-muted-foreground">
+                      von @{r.reporter_username} ·{" "}
+                      {new Date(r.created_at).toLocaleString("de-DE")}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </li>
           ))}
         </ul>
@@ -94,38 +91,7 @@ export default async function DisplayPage() {
               Sprüche aus dem Büro
             </div>
           </header>
-          <ul className="grid list-none grid-cols-[repeat(auto-fill,minmax(min(480px,100%),1fr))] gap-5 p-0">
-            {quotes.map((q) => (
-              <li
-                key={q.id}
-                className="flex items-start gap-5 rounded-2xl border border-primary/25 bg-card p-[22px]"
-              >
-                <Avatar className="size-[clamp(64px,11vw,104px)] ring-2 ring-primary">
-                  {q.author_avatar_url ? (
-                    <AvatarImage src={q.author_avatar_url} alt="" />
-                  ) : null}
-                  <AvatarFallback className="text-4xl font-extrabold">
-                    {q.author_display?.[0]?.toUpperCase() ?? "?"}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="min-w-0 flex-1">
-                  <div className="mb-3 text-[clamp(18px,2.4vw,28px)] leading-snug italic">
-                    „{q.text}“
-                  </div>
-                  <div className="mb-1 text-[clamp(18px,2.6vw,30px)] font-extrabold">
-                    —{" "}
-                    {q.author_username
-                      ? `@${q.author_username}`
-                      : q.author_display}
-                  </div>
-                  <div className="text-[clamp(12px,1.4vw,16px)] text-muted-foreground">
-                    {q.said_on ? `gesagt am ${formatDay(q.said_on)} · ` : ""}
-                    hinzugefügt von @{q.added_by_username}
-                  </div>
-                </div>
-              </li>
-            ))}
-          </ul>
+          <QuoteCarousel quotes={quotes} />
         </section>
       ) : null}
 
