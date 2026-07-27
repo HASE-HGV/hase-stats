@@ -138,11 +138,6 @@ export default async function DeedsPage() {
                       <strong>{label}</strong>
                       <div className="mt-1">
                         <Badge
-                          className={
-                            d.status === "approved"
-                              ? "bg-good text-good-foreground"
-                              : ""
-                          }
                           variant={
                             d.status === "approved" ? "default" : "secondary"
                           }

@@ -144,7 +144,7 @@ export default function EditQuoteForm({
         />
       ) : null}
       <div className="flex gap-2">
-        <Button type="submit" variant="success" size="sm" disabled={loading}>
+        <Button type="submit" size="sm" disabled={loading}>
           {loading ? "…" : "Speichern"}
         </Button>
         <Button

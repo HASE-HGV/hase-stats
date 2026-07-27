@@ -168,7 +168,7 @@ export default function NewDeedForm({
         />
       </div>
       <div>
-        <Button type="submit" variant="success" size="lg" disabled={loading}>
+        <Button type="submit" size="lg" disabled={loading}>
           {loading ? "Lade hoch…" : "Einreichen"}
         </Button>
       </div>

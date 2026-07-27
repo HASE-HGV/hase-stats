@@ -76,7 +76,7 @@ export default function EditTemplateForm({
         placeholder="Beschreibung (optional)"
       />
       <div className="flex gap-2">
-        <Button type="submit" variant="success" size="sm" disabled={loading}>
+        <Button type="submit" size="sm" disabled={loading}>
           {loading ? "…" : "Speichern"}
         </Button>
         <Button

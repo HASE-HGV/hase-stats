@@ -66,7 +66,7 @@ export default function NewTaskForm({ userId }: { userId: string }) {
         />
       </div>
       <div>
-        <Button type="submit" variant="success" size="lg" disabled={loading}>
+        <Button type="submit" size="lg" disabled={loading}>
           {loading ? "Speichere…" : "Aufgabe hinzufügen"}
         </Button>
       </div>

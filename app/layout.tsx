@@ -1,6 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import AuthRecoveryWatcher from "./AuthRecoveryWatcher";
+import { Inter } from "next/font/google";
+import { cn } from "@/lib/utils";
+
+const inter = Inter({subsets:['latin'],variable:'--font-sans'});
 
 export const metadata: Metadata = {
   title: "HASE — Wall of Shame",
@@ -21,7 +25,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="de" className="dark">
+    <html lang="de" className={cn("dark", "font-sans", inter.variable)}>
       <body>
         <AuthRecoveryWatcher />
         {children}

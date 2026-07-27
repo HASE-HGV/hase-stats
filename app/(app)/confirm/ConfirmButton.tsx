@@ -34,7 +34,7 @@ export default function ConfirmButton({
 
   return (
     <>
-      <Button variant="success" onClick={onConfirm} disabled={loading}>
+      <Button onClick={onConfirm} disabled={loading}>
         {loading ? "…" : "Bestätigen"}
       </Button>
       {err ? <span className="text-sm text-destructive">{err}</span> : null}
