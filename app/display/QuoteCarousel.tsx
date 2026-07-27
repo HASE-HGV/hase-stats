@@ -4,6 +4,7 @@ import * as React from "react";
 import Autoplay from "embla-carousel-autoplay";
 import type { QuoteRow } from "@/lib/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Carousel,
   CarouselContent,
@@ -31,33 +32,35 @@ export default function QuoteCarousel({ quotes }: { quotes: QuoteRow[] }) {
       <CarouselContent>
         {quotes.map((q) => (
           <CarouselItem key={q.id}>
-            <div className="flex min-h-[40vh] flex-col items-center justify-center gap-8 rounded-2xl border border-primary/25 bg-card p-[clamp(24px,4vw,64px)] text-center">
-              <blockquote className="max-w-4xl text-[clamp(24px,4vw,52px)] leading-snug font-medium text-balance italic">
-                „{q.text}“
-              </blockquote>
-              <div className="flex items-center gap-4">
-                <Avatar className="size-[clamp(48px,7vw,80px)] ring-2 ring-primary">
-                  {q.author_avatar_url ? (
-                    <AvatarImage src={q.author_avatar_url} alt="" />
-                  ) : null}
-                  <AvatarFallback className="text-3xl font-extrabold">
-                    {q.author_display?.[0]?.toUpperCase() ?? "?"}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="text-left">
-                  <div className="text-[clamp(20px,2.8vw,34px)] font-extrabold">
-                    —{" "}
-                    {q.author_username
-                      ? `@${q.author_username}`
-                      : q.author_display}
-                  </div>
-                  <div className="text-[clamp(12px,1.4vw,18px)] text-muted-foreground">
-                    {q.said_on ? `gesagt am ${formatDay(q.said_on)} · ` : ""}
-                    hinzugefügt von @{q.added_by_username}
+            <Card className="h-[30dvh] justify-center">
+              <CardContent className="flex h-full flex-col items-center justify-center gap-4 text-center">
+                <blockquote className="line-clamp-4 max-w-4xl text-2xl leading-snug font-medium text-balance italic md:text-3xl">
+                  „{q.text}“
+                </blockquote>
+                <div className="flex items-center gap-3">
+                  <Avatar className="size-11 shrink-0">
+                    {q.author_avatar_url ? (
+                      <AvatarImage src={q.author_avatar_url} alt="" />
+                    ) : null}
+                    <AvatarFallback className="font-bold">
+                      {q.author_display?.[0]?.toUpperCase() ?? "?"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="text-left">
+                    <div className="text-lg font-bold md:text-xl">
+                      —{" "}
+                      {q.author_username
+                        ? `@${q.author_username}`
+                        : q.author_display}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      {q.said_on ? `gesagt am ${formatDay(q.said_on)} · ` : ""}
+                      hinzugefügt von @{q.added_by_username}
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           </CarouselItem>
         ))}
       </CarouselContent>
