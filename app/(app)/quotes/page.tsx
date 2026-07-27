@@ -89,7 +89,7 @@ export default async function QuotesPage() {
                     </AvatarFallback>
                   </Avatar>
                   <div className="min-w-0 flex-1">
-                    <blockquote className="text-lg leading-snug italic">
+                    <blockquote className="text-lg leading-snug whitespace-pre-line italic">
                       „{q.text}“
                     </blockquote>
                     <div className="mt-2 flex flex-wrap items-center gap-2.5">
