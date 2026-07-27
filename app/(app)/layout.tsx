@@ -1,7 +1,17 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import LogoutButton from "./LogoutButton";
+
+const navLinks = [
+  { href: "/wall", label: "Wall of Shame" },
+  { href: "/good-deeds", label: "Wall of Good Deeds" },
+  { href: "/deeds", label: "Einreichen" },
+  { href: "/confirm", label: "Bestätigen" },
+  { href: "/quotes", label: "Zitate" },
+  { href: "/profile", label: "Profil" },
+];
 
 export default async function AppLayout({
   children,
@@ -21,33 +31,54 @@ export default async function AppLayout({
     .eq("id", user.id)
     .single();
 
+  const username = profile?.username ?? "?";
+
   return (
     <>
-      <nav>
-        <span className="nav-brand">HASE · WoS</span>
-        <span className="spacer" />
-        <div className="nav-user">
-          {profile?.avatar_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={profile.avatar_url}
-              alt=""
-              className="avatar"
-              style={{ width: 32, height: 32 }}
-            />
-          ) : null}
-          <span className="muted username">@{profile?.username ?? "?"}</span>
+      <nav
+        className="sticky top-0 z-10 flex flex-wrap items-center gap-3 border-b border-border bg-card/80 px-4 pb-2.5 backdrop-blur-md backdrop-saturate-150"
+        style={{
+          paddingTop: "calc(10px + var(--sa-top))",
+          paddingLeft: "max(16px, var(--sa-left))",
+          paddingRight: "max(16px, var(--sa-right))",
+        }}
+      >
+        <span className="text-base font-bold">HASE · WoS</span>
+        <span className="flex-1" />
+        <div className="flex flex-shrink-0 items-center gap-2">
+          <Avatar className="size-8">
+            {profile?.avatar_url ? (
+              <AvatarImage src={profile.avatar_url} alt="" />
+            ) : null}
+            <AvatarFallback>{username[0]?.toUpperCase()}</AvatarFallback>
+          </Avatar>
+          <span className="hidden max-w-[140px] truncate text-muted-foreground sm:inline">
+            @{username}
+          </span>
           <LogoutButton />
         </div>
-        <div className="nav-links">
-          <Link href="/wall">Wall of Shame</Link>
-          <Link href="/good-deeds">Wall of Good Deeds</Link>
-          <Link href="/deeds">Einreichen</Link>
-          <Link href="/confirm">Bestätigen</Link>
-          <Link href="/profile">Profil</Link>
+        <div className="no-scrollbar order-3 flex w-full items-center gap-4 overflow-x-auto border-t border-border pt-1.5 text-sm sm:order-none sm:w-auto sm:border-t-0 sm:pt-0 sm:text-[15px]">
+          {navLinks.map((l) => (
+            <Link
+              key={l.href}
+              href={l.href}
+              className="font-medium whitespace-nowrap text-muted-foreground transition-colors hover:text-foreground"
+            >
+              {l.label}
+            </Link>
+          ))}
         </div>
       </nav>
-      <main className="container">{children}</main>
+      <main
+        className="mx-auto w-full max-w-[960px] px-4 pt-4 sm:pt-5"
+        style={{
+          paddingBottom: "calc(80px + var(--sa-bottom))",
+          paddingLeft: "max(16px, var(--sa-left))",
+          paddingRight: "max(16px, var(--sa-right))",
+        }}
+      >
+        {children}
+      </main>
     </>
   );
 }

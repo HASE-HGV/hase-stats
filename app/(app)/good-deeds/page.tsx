@@ -1,4 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import NewTaskForm from "./NewTaskForm";
 import DeactivateButton from "./DeactivateButton";
 import EditTemplateForm from "./EditTemplateForm";
@@ -71,72 +77,63 @@ export default async function WallOfGoodDeedsPage() {
 
   return (
     <>
-      <h1>Wall of Good Deeds</h1>
-      <p className="muted" style={{ marginTop: -8 }}>
+      <h1 className="mb-2 text-2xl font-bold sm:text-3xl">
+        Wall of Good Deeds
+      </h1>
+      <p className="mb-4 text-muted-foreground">
         Aufgaben, die als Good Deed gemacht werden können. Alle dürfen neue
         Aufgaben hinzufügen. Zum Einreichen mit Foto-Beweis zur{" "}
         <strong>Good Deeds</strong> Seite.
       </p>
 
-      <div className="card" style={{ marginBottom: 24 }}>
-        <h2>Neue Aufgabe hinzufügen</h2>
-        <NewTaskForm userId={user!.id} />
-      </div>
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>Neue Aufgabe hinzufügen</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <NewTaskForm userId={user!.id} />
+        </CardContent>
+      </Card>
 
-      {error ? <div className="error">{error.message}</div> : null}
+      {error ? (
+        <p className="text-sm text-destructive">{error.message}</p>
+      ) : null}
 
       {tasks.length === 0 ? (
-        <p className="muted">Noch keine Aufgaben.</p>
+        <p className="text-muted-foreground">Noch keine Aufgaben.</p>
       ) : (
-        <ul
-          style={{
-            listStyle: "none",
-            padding: 0,
-            margin: 0,
-            display: "grid",
-            gap: 10,
-          }}
-        >
+        <ul className="grid list-none gap-2.5 p-0">
           {tasks.map((t) => {
             const canEdit = t.created_by === user!.id || isAdmin;
             return (
-              <li key={t.id} className="card">
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 12,
-                    justifyContent: "space-between",
-                    flexWrap: "wrap",
-                  }}
-                >
-                  <div style={{ minWidth: 0, flex: 1 }}>
-                    <strong style={{ fontSize: 17 }}>{t.title}</strong>
-                    {t.description ? (
-                      <div className="muted" style={{ marginTop: 4 }}>
-                        {t.description}
-                      </div>
-                    ) : null}
-                    {t.creator ? (
-                      <div
-                        className="muted"
-                        style={{ fontSize: 12, marginTop: 6 }}
-                      >
-                        hinzugefügt von @{t.creator.username}
-                      </div>
-                    ) : null}
-                  </div>
-                  {canEdit ? (
-                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                      <EditTemplateForm
-                        id={t.id}
-                        initialTitle={t.title}
-                        initialDescription={t.description}
-                      />
-                      <DeactivateButton id={t.id} />
+              <li key={t.id}>
+                <Card>
+                  <CardContent className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <strong className="text-[17px]">{t.title}</strong>
+                      {t.description ? (
+                        <div className="mt-1 text-muted-foreground">
+                          {t.description}
+                        </div>
+                      ) : null}
+                      {t.creator ? (
+                        <div className="mt-1.5 text-xs text-muted-foreground">
+                          hinzugefügt von @{t.creator.username}
+                        </div>
+                      ) : null}
                     </div>
-                  ) : null}
-                </div>
+                    {canEdit ? (
+                      <div className="flex flex-wrap gap-2">
+                        <EditTemplateForm
+                          id={t.id}
+                          initialTitle={t.title}
+                          initialDescription={t.description}
+                        />
+                        <DeactivateButton id={t.id} />
+                      </div>
+                    ) : null}
+                  </CardContent>
+                </Card>
               </li>
             );
           })}

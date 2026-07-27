@@ -3,6 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export default function LoginForm() {
   const router = useRouter();
@@ -30,35 +33,33 @@ export default function LoginForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} style={{ display: "grid", gap: 12 }}>
-      <label>
-        <span className="muted" style={{ fontSize: 13 }}>
-          Email
-        </span>
-        <input
+    <form onSubmit={onSubmit} className="grid gap-4">
+      <div className="grid gap-1.5">
+        <Label htmlFor="email">Email</Label>
+        <Input
+          id="email"
           type="email"
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           autoComplete="email"
         />
-      </label>
-      <label>
-        <span className="muted" style={{ fontSize: 13 }}>
-          Passwort
-        </span>
-        <input
+      </div>
+      <div className="grid gap-1.5">
+        <Label htmlFor="password">Passwort</Label>
+        <Input
+          id="password"
           type="password"
           required
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           autoComplete="current-password"
         />
-      </label>
-      <button className="btn" type="submit" disabled={loading}>
+      </div>
+      <Button type="submit" size="lg" disabled={loading}>
         {loading ? "Einen Moment…" : "Anmelden"}
-      </button>
-      {err ? <div className="error">{err}</div> : null}
+      </Button>
+      {err ? <p className="text-sm text-destructive">{err}</p> : null}
     </form>
   );
 }

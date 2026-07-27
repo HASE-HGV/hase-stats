@@ -4,6 +4,16 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { GoodDeedTemplate } from "@/lib/types";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type OpenShame = {
   id: string;
@@ -30,6 +40,12 @@ export default function NewDeedForm({
 
   const hasOpenShames = openShames.length > 0;
   const hasTemplates = templates.length > 0;
+
+  const templateItems = templates.map((t) => ({ value: t.id, label: t.title }));
+  const shameItems = openShames.map((s) => ({
+    value: s.id,
+    label: `${s.reason} (von @${s.reporter_username})`,
+  }));
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -82,75 +98,81 @@ export default function NewDeedForm({
   }
 
   return (
-    <form onSubmit={onSubmit} style={{ display: "grid", gap: 12 }}>
-      <label>
-        <span className="muted" style={{ fontSize: 13 }}>
-          Was hast du getan?
-        </span>
-        <select
-          required
-          value={templateId}
-          onChange={(e) => setTemplateId(e.target.value)}
+    <form onSubmit={onSubmit} className="grid gap-3">
+      <div className="grid gap-1.5">
+        <Label>Was hast du getan?</Label>
+        <Select
+          items={templateItems}
+          value={templateId || null}
+          onValueChange={(v) => setTemplateId((v as string) ?? "")}
           disabled={!hasTemplates}
         >
-          <option value="">
-            {hasTemplates ? "— auswählen —" : "— keine Aufgabe verfügbar —"}
-          </option>
-          {templates.map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.title}
-            </option>
-          ))}
-        </select>
-        <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>
+          <SelectTrigger className="w-full">
+            <SelectValue
+              placeholder={
+                hasTemplates ? "— auswählen —" : "— keine Aufgabe verfügbar —"
+              }
+            />
+          </SelectTrigger>
+          <SelectContent>
+            {templateItems.map((it) => (
+              <SelectItem key={it.value} value={it.value}>
+                {it.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <div className="text-xs text-muted-foreground">
           Fehlt eine Aufgabe? Auf der{" "}
-          <a href="/good-deeds" style={{ textDecoration: "underline" }}>
+          <a href="/good-deeds" className="underline">
             Wall of Good Deeds
           </a>{" "}
           anlegen. Aufgaben, die gerade auf Bestätigung warten, sind hier
           ausgeblendet, bis sie bestätigt sind.
         </div>
-      </label>
+      </div>
       {hasOpenShames ? (
-        <label>
-          <span className="muted" style={{ fontSize: 13 }}>
-            Welcher Eintrag soll von der Wall of Shame entfernt werden?
-          </span>
-          <select
-            required
-            value={targetShameId}
-            onChange={(e) => setTargetShameId(e.target.value)}
+        <div className="grid gap-1.5">
+          <Label>Welcher Eintrag soll von der Wall of Shame entfernt werden?</Label>
+          <Select
+            items={shameItems}
+            value={targetShameId || null}
+            onValueChange={(v) => setTargetShameId((v as string) ?? "")}
           >
-            <option value="">— auswählen —</option>
-            {openShames.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.reason} (von @{s.reporter_username})
-              </option>
-            ))}
-          </select>
-          <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="— auswählen —" />
+            </SelectTrigger>
+            <SelectContent>
+              {shameItems.map((it) => (
+                <SelectItem key={it.value} value={it.value}>
+                  {it.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <div className="text-xs text-muted-foreground">
             Wird entfernt, sobald zwei andere den Deed bestätigt haben.
           </div>
-        </label>
+        </div>
       ) : null}
-      <label>
-        <span className="muted" style={{ fontSize: 13 }}>
-          Foto als Beweis
-        </span>
-        <input
+      <div className="grid gap-1.5">
+        <Label htmlFor="deed-photo">Foto als Beweis</Label>
+        <Input
+          id="deed-photo"
           type="file"
           accept="image/*"
           capture="environment"
           required
+          className="py-2"
           onChange={(e) => setFile(e.target.files?.[0] ?? null)}
         />
-      </label>
-      <div>
-        <button className="btn good" type="submit" disabled={loading}>
-          {loading ? "Lade hoch…" : "Einreichen"}
-        </button>
       </div>
-      {err ? <div className="error">{err}</div> : null}
+      <div>
+        <Button type="submit" variant="success" size="lg" disabled={loading}>
+          {loading ? "Lade hoch…" : "Einreichen"}
+        </Button>
+      </div>
+      {err ? <p className="text-sm text-destructive">{err}</p> : null}
     </form>
   );
 }

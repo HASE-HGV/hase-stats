@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 type Props = {
   id: string;
@@ -46,42 +48,41 @@ export default function EditTemplateForm({
 
   if (!open) {
     return (
-      <button
-        className="btn secondary"
+      <Button
+        variant="outline"
+        size="sm"
         onClick={() => setOpen(true)}
         title="Bearbeiten"
       >
         Bearbeiten
-      </button>
+      </Button>
     );
   }
 
   return (
-    <form
-      onSubmit={onSubmit}
-      style={{ display: "grid", gap: 8, width: "100%", marginTop: 8 }}
-    >
-      <input
+    <form onSubmit={onSubmit} className="mt-2 grid w-full gap-2">
+      <Input
         type="text"
         required
         maxLength={80}
         value={title}
         onChange={(e) => setTitle(e.target.value)}
       />
-      <input
+      <Input
         type="text"
         maxLength={200}
         value={description}
         onChange={(e) => setDescription(e.target.value)}
         placeholder="Beschreibung (optional)"
       />
-      <div style={{ display: "flex", gap: 8 }}>
-        <button className="btn good" type="submit" disabled={loading}>
+      <div className="flex gap-2">
+        <Button type="submit" variant="success" size="sm" disabled={loading}>
           {loading ? "…" : "Speichern"}
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
-          className="btn secondary"
+          variant="outline"
+          size="sm"
           onClick={() => {
             setOpen(false);
             setTitle(initialTitle);
@@ -90,9 +91,9 @@ export default function EditTemplateForm({
           }}
         >
           Abbrechen
-        </button>
+        </Button>
       </div>
-      {err ? <div className="error">{err}</div> : null}
+      {err ? <p className="text-sm text-destructive">{err}</p> : null}
     </form>
   );
 }

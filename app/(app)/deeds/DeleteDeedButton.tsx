@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
 
 export default function DeleteDeedButton({ id }: { id: string }) {
   const router = useRouter();
@@ -28,15 +29,16 @@ export default function DeleteDeedButton({ id }: { id: string }) {
 
   return (
     <>
-      <button
-        className="btn secondary"
+      <Button
+        variant="destructive"
+        size="sm"
         onClick={onClick}
         disabled={loading}
         title="Admin: Deed löschen"
       >
         {loading ? "…" : "Löschen"}
-      </button>
-      {err ? <div className="error" style={{ marginTop: 6 }}>{err}</div> : null}
+      </Button>
+      {err ? <p className="mt-1.5 text-xs text-destructive">{err}</p> : null}
     </>
   );
 }

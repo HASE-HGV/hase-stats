@@ -3,6 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export default function NewTaskForm({ userId }: { userId: string }) {
   const router = useRouter();
@@ -38,12 +41,11 @@ export default function NewTaskForm({ userId }: { userId: string }) {
   }
 
   return (
-    <form onSubmit={onSubmit} style={{ display: "grid", gap: 12 }}>
-      <label>
-        <span className="muted" style={{ fontSize: 13 }}>
-          Titel
-        </span>
-        <input
+    <form onSubmit={onSubmit} className="grid gap-3">
+      <div className="grid gap-1.5">
+        <Label htmlFor="task-title">Titel</Label>
+        <Input
+          id="task-title"
           type="text"
           required
           maxLength={80}
@@ -51,25 +53,24 @@ export default function NewTaskForm({ userId }: { userId: string }) {
           onChange={(e) => setTitle(e.target.value)}
           placeholder="z.B. Kaffeemaschine entkalken"
         />
-      </label>
-      <label>
-        <span className="muted" style={{ fontSize: 13 }}>
-          Beschreibung (optional)
-        </span>
-        <input
+      </div>
+      <div className="grid gap-1.5">
+        <Label htmlFor="task-desc">Beschreibung (optional)</Label>
+        <Input
+          id="task-desc"
           type="text"
           maxLength={200}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Was genau ist zu tun?"
         />
-      </label>
-      <div>
-        <button className="btn good" type="submit" disabled={loading}>
-          {loading ? "Speichere…" : "Aufgabe hinzufügen"}
-        </button>
       </div>
-      {err ? <div className="error">{err}</div> : null}
+      <div>
+        <Button type="submit" variant="success" size="lg" disabled={loading}>
+          {loading ? "Speichere…" : "Aufgabe hinzufügen"}
+        </Button>
+      </div>
+      {err ? <p className="text-sm text-destructive">{err}</p> : null}
     </form>
   );
 }

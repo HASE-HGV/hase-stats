@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui/button";
 
 export default function ConfirmButton({
   deedId,
@@ -33,10 +34,10 @@ export default function ConfirmButton({
 
   return (
     <>
-      <button className="btn good" onClick={onConfirm} disabled={loading}>
+      <Button variant="success" onClick={onConfirm} disabled={loading}>
         {loading ? "…" : "Bestätigen"}
-      </button>
-      {err ? <span className="error">{err}</span> : null}
+      </Button>
+      {err ? <span className="text-sm text-destructive">{err}</span> : null}
     </>
   );
 }

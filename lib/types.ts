@@ -46,3 +46,26 @@ export type GoodDeed = {
   created_at: string;
   approved_at: string | null;
 };
+
+export type Quote = {
+  id: string;
+  text: string;
+  author_profile_id: string | null;
+  author_name: string | null;
+  added_by: string;
+  created_at: string;
+};
+
+// Zeile aus der quotes_view (mit aufgelösten Usernamen für die Anzeige).
+export type QuoteRow = {
+  id: string;
+  text: string;
+  created_at: string;
+  author_profile_id: string | null;
+  author_username: string | null;
+  author_avatar_url: string | null;
+  author_name: string | null;
+  author_display: string;
+  added_by: string;
+  added_by_username: string;
+};

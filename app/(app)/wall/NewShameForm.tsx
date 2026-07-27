@@ -4,6 +4,16 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/lib/types";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function NewShameForm({
   profiles,
@@ -19,6 +29,11 @@ export default function NewShameForm({
   const [reason, setReason] = useState("");
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const items = profiles.map((p) => ({
+    value: p.id,
+    label: p.id === selfId ? `@${p.username} (ich selbst)` : `@${p.username}`,
+  }));
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -45,29 +60,29 @@ export default function NewShameForm({
   }
 
   return (
-    <form onSubmit={onSubmit} style={{ display: "grid", gap: 12 }}>
-      <label>
-        <span className="muted" style={{ fontSize: 13 }}>
-          Person
-        </span>
-        <select
-          required
-          value={targetId}
-          onChange={(e) => setTargetId(e.target.value)}
+    <form onSubmit={onSubmit} className="grid gap-3">
+      <div className="grid gap-1.5">
+        <Label>Person</Label>
+        <Select
+          items={items}
+          value={targetId || null}
+          onValueChange={(v) => setTargetId((v as string) ?? "")}
         >
-          <option value="">— auswählen —</option>
-          {profiles.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.id === selfId ? `@${p.username} (ich selbst)` : `@${p.username}`}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label>
-        <span className="muted" style={{ fontSize: 13 }}>
-          Grund
-        </span>
-        <textarea
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="— auswählen —" />
+          </SelectTrigger>
+          <SelectContent>
+            {items.map((it) => (
+              <SelectItem key={it.value} value={it.value}>
+                {it.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="grid gap-1.5">
+        <Label>Grund</Label>
+        <Textarea
           required
           minLength={1}
           maxLength={500}
@@ -76,13 +91,13 @@ export default function NewShameForm({
           onChange={(e) => setReason(e.target.value)}
           placeholder="z.B. hat die Kaffeetasse nicht gespült"
         />
-      </label>
-      <div>
-        <button className="btn" type="submit" disabled={loading}>
-          {loading ? "Speichere…" : "Auf Wall of Shame setzen"}
-        </button>
       </div>
-      {err ? <div className="error">{err}</div> : null}
+      <div>
+        <Button type="submit" size="lg" disabled={loading}>
+          {loading ? "Speichere…" : "Auf Wall of Shame setzen"}
+        </Button>
+      </div>
+      {err ? <p className="text-sm text-destructive">{err}</p> : null}
     </form>
   );
 }

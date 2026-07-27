@@ -1,4 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@/components/ui/avatar";
+import { Card, CardContent } from "@/components/ui/card";
 import ConfirmButton from "./ConfirmButton";
 import DeleteDeedButton from "../deeds/DeleteDeedButton";
 
@@ -51,71 +57,59 @@ export default async function ConfirmPage() {
 
   return (
     <>
-      <h1>Good Deeds bestätigen</h1>
-      <p className="muted" style={{ marginTop: -8 }}>
+      <h1 className="mb-2 text-2xl font-bold sm:text-3xl">
+        Good Deeds bestätigen
+      </h1>
+      <p className="mb-4 text-muted-foreground">
         Zwei Bestätigungen aus verschiedenen Personen sind nötig, bevor der von
         der einreichenden Person gewählte Eintrag von der Wall of Shame
         entfernt wird.
       </p>
 
-      {error ? <div className="error">{error.message}</div> : null}
+      {error ? (
+        <p className="text-sm text-destructive">{error.message}</p>
+      ) : null}
 
       {actionable.length === 0 ? (
-        <p className="muted">Nichts zu bestätigen. 👍</p>
+        <p className="text-muted-foreground">Nichts zu bestätigen. 👍</p>
       ) : (
-        <ul
-          style={{
-            listStyle: "none",
-            padding: 0,
-            margin: 0,
-            display: "grid",
-            gap: 14,
-          }}
-        >
+        <ul className="grid list-none gap-3.5 p-0">
           {actionable.map((d) => {
             const label = d.template?.title ?? d.description ?? "Good Deed";
             return (
-              <li key={d.id} className="card">
-                <div className="row">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={d.photo_url} alt="" className="thumb" />
-                  <div style={{ flex: 1 }}>
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 8,
-                      }}
-                    >
-                      {d.author.avatar_url ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={d.author.avatar_url}
-                          alt=""
-                          className="avatar"
-                          style={{ width: 28, height: 28 }}
-                        />
-                      ) : null}
-                      <strong>@{d.author.username}</strong>
+              <li key={d.id}>
+                <Card>
+                  <CardContent className="flex flex-col gap-3.5 sm:flex-row sm:items-start">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={d.photo_url}
+                      alt=""
+                      className="size-24 shrink-0 rounded-lg bg-black object-cover sm:size-[140px]"
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <Avatar className="size-7">
+                          {d.author.avatar_url ? (
+                            <AvatarImage src={d.author.avatar_url} alt="" />
+                          ) : null}
+                          <AvatarFallback className="text-xs">
+                            {d.author.username[0]?.toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <strong>@{d.author.username}</strong>
+                      </div>
+                      <p className="my-2.5">{label}</p>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <ConfirmButton deedId={d.id} userId={user!.id} />
+                        {isAdmin ? <DeleteDeedButton id={d.id} /> : null}
+                        <span className="text-[13px] text-muted-foreground">
+                          {d.confirmations.length} / 2 Bestätigungen ·{" "}
+                          {new Date(d.created_at).toLocaleString("de-DE")}
+                        </span>
+                      </div>
                     </div>
-                    <p style={{ margin: "6px 0 10px" }}>{label}</p>
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: 12,
-                        alignItems: "center",
-                        flexWrap: "wrap",
-                      }}
-                    >
-                      <ConfirmButton deedId={d.id} userId={user!.id} />
-                      {isAdmin ? <DeleteDeedButton id={d.id} /> : null}
-                      <span className="muted" style={{ fontSize: 13 }}>
-                        {d.confirmations.length} / 2 Bestätigungen ·{" "}
-                        {new Date(d.created_at).toLocaleString("de-DE")}
-                      </span>
-                    </div>
-                  </div>
-                </div>
+                  </CardContent>
+                </Card>
               </li>
             );
           })}

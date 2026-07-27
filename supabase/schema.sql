@@ -339,3 +339,70 @@ create or replace view public.shame_wall as
   order by s.created_at desc;
 
 grant select on public.shame_wall to anon, authenticated;
+
+-- ----------------------------------------------------------------------------
+-- 9. QUOTES (Zitatliste)
+-- Jede:r authentifizierte Person kann Zitate hinzufügen; nur Admins dürfen
+-- bearbeiten/löschen. Urheber ist entweder ein registrierter Nutzer
+-- (author_profile_id) oder ein Freitext-Name (author_name).
+-- ----------------------------------------------------------------------------
+create table if not exists public.quotes (
+  id uuid primary key default gen_random_uuid(),
+  text text not null check (char_length(text) between 1 and 1000),
+  author_profile_id uuid references public.profiles(id) on delete set null,
+  author_name text check (author_name is null or char_length(author_name) between 1 and 100),
+  added_by uuid not null references public.profiles(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  constraint quote_has_author check (
+    author_profile_id is not null
+    or (author_name is not null and char_length(author_name) > 0)
+  )
+);
+
+create index if not exists quotes_created_idx on public.quotes (created_at desc);
+
+alter table public.quotes enable row level security;
+
+drop policy if exists "quotes read" on public.quotes;
+create policy "quotes read" on public.quotes
+  for select to anon, authenticated using (true);
+
+drop policy if exists "quotes insert" on public.quotes;
+create policy "quotes insert" on public.quotes
+  for insert to authenticated with check (auth.uid() = added_by);
+
+drop policy if exists "quotes update admin" on public.quotes;
+create policy "quotes update admin" on public.quotes
+  for update to authenticated
+  using (
+    exists (select 1 from public.profiles where id = auth.uid() and is_admin = true)
+  )
+  with check (
+    exists (select 1 from public.profiles where id = auth.uid() and is_admin = true)
+  );
+
+drop policy if exists "quotes delete admin" on public.quotes;
+create policy "quotes delete admin" on public.quotes
+  for delete to authenticated
+  using (
+    exists (select 1 from public.profiles where id = auth.uid() and is_admin = true)
+  );
+
+create or replace view public.quotes_view as
+  select
+    q.id,
+    q.text,
+    q.created_at,
+    q.author_profile_id,
+    ap.username     as author_username,
+    ap.avatar_url   as author_avatar_url,
+    q.author_name,
+    coalesce(ap.username, q.author_name) as author_display,
+    q.added_by,
+    addp.username   as added_by_username
+  from public.quotes q
+  left join public.profiles ap on ap.id = q.author_profile_id
+  join public.profiles addp on addp.id = q.added_by
+  order by q.created_at desc;
+
+grant select on public.quotes_view to anon, authenticated;

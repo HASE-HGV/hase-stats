@@ -3,6 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export default function ResetPasswordForm() {
   const router = useRouter();
@@ -40,19 +43,16 @@ export default function ResetPasswordForm() {
 
   if (done) {
     return (
-      <p style={{ margin: 0 }}>
-        Passwort gespeichert. Du wirst weitergeleitet …
-      </p>
+      <p className="text-sm">Passwort gespeichert. Du wirst weitergeleitet …</p>
     );
   }
 
   return (
-    <form onSubmit={onSubmit} style={{ display: "grid", gap: 12 }}>
-      <label>
-        <span className="muted" style={{ fontSize: 13 }}>
-          Neues Passwort
-        </span>
-        <input
+    <form onSubmit={onSubmit} className="grid gap-4">
+      <div className="grid gap-1.5">
+        <Label htmlFor="pw">Neues Passwort</Label>
+        <Input
+          id="pw"
           type="password"
           required
           minLength={6}
@@ -60,12 +60,11 @@ export default function ResetPasswordForm() {
           onChange={(e) => setPw(e.target.value)}
           autoComplete="new-password"
         />
-      </label>
-      <label>
-        <span className="muted" style={{ fontSize: 13 }}>
-          Wiederholen
-        </span>
-        <input
+      </div>
+      <div className="grid gap-1.5">
+        <Label htmlFor="pw2">Wiederholen</Label>
+        <Input
+          id="pw2"
           type="password"
           required
           minLength={6}
@@ -73,11 +72,11 @@ export default function ResetPasswordForm() {
           onChange={(e) => setPw2(e.target.value)}
           autoComplete="new-password"
         />
-      </label>
-      <button className="btn" type="submit" disabled={loading}>
+      </div>
+      <Button type="submit" size="lg" disabled={loading}>
         {loading ? "Speichere…" : "Passwort speichern"}
-      </button>
-      {err ? <div className="error">{err}</div> : null}
+      </Button>
+      {err ? <p className="text-sm text-destructive">{err}</p> : null}
     </form>
   );
 }

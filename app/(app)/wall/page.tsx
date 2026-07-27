@@ -1,5 +1,17 @@
 import { createClient } from "@/lib/supabase/server";
 import type { Profile, ShameWallRow } from "@/lib/types";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import NewShameForm from "./NewShameForm";
 import DeleteShameButton from "./DeleteShameButton";
 
@@ -37,84 +49,53 @@ export default async function WallPage() {
 
   return (
     <>
-      <h1>Wall of Shame</h1>
+      <h1 className="mb-4 text-2xl font-bold sm:text-3xl">Wall of Shame</h1>
 
-      <div className="card" style={{ marginBottom: 24 }}>
-        <h2>Neuen Eintrag hinzufügen</h2>
-        <NewShameForm
-          profiles={sorted}
-          reporterId={user!.id}
-          selfId={user!.id}
-        />
-      </div>
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>Neuen Eintrag hinzufügen</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <NewShameForm
+            profiles={sorted}
+            reporterId={user!.id}
+            selfId={user!.id}
+          />
+        </CardContent>
+      </Card>
 
       {entries.length === 0 ? (
-        <p className="muted">
+        <p className="text-muted-foreground">
           Aktuell ist niemand auf der Wall of Shame. 🎉
         </p>
       ) : (
-        <ul
-          style={{
-            listStyle: "none",
-            padding: 0,
-            margin: 0,
-            display: "grid",
-            gap: 12,
-          }}
-        >
+        <ul className="grid list-none gap-3 p-0">
           {entries.map((e) => (
-            <li key={e.id} className="card">
-              <div
-                style={{
-                  display: "flex",
-                  gap: 14,
-                  alignItems: "flex-start",
-                }}
-              >
-                {e.target_avatar_url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={e.target_avatar_url}
-                    alt=""
-                    className="avatar lg"
-                  />
-                ) : (
-                  <div
-                    className="avatar lg"
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: 26,
-                    }}
-                  >
-                    {e.target_username[0]?.toUpperCase()}
+            <li key={e.id}>
+              <Card>
+                <CardContent className="flex items-start gap-3.5">
+                  <Avatar size="lg" className="size-14">
+                    {e.target_avatar_url ? (
+                      <AvatarImage src={e.target_avatar_url} alt="" />
+                    ) : null}
+                    <AvatarFallback className="text-2xl">
+                      {e.target_username[0]?.toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2.5">
+                      <strong className="text-lg">@{e.target_username}</strong>
+                      <Badge>WoS</Badge>
+                      <span className="text-[13px] text-muted-foreground">
+                        eingetragen von @{e.reporter_username} ·{" "}
+                        {new Date(e.created_at).toLocaleString("de-DE")}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-base">{e.reason}</p>
                   </div>
-                )}
-                <div style={{ flex: 1 }}>
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: 10,
-                      alignItems: "center",
-                      flexWrap: "wrap",
-                    }}
-                  >
-                    <strong style={{ fontSize: 18 }}>
-                      @{e.target_username}
-                    </strong>
-                    <span className="badge">WoS</span>
-                    <span className="muted" style={{ fontSize: 13 }}>
-                      eingetragen von @{e.reporter_username} ·{" "}
-                      {new Date(e.created_at).toLocaleString("de-DE")}
-                    </span>
-                  </div>
-                  <p style={{ margin: "8px 0 0", fontSize: 16 }}>{e.reason}</p>
-                </div>
-                {isAdmin ? (
-                  <DeleteShameButton id={e.id} />
-                ) : null}
-              </div>
+                  {isAdmin ? <DeleteShameButton id={e.id} /> : null}
+                </CardContent>
+              </Card>
             </li>
           ))}
         </ul>

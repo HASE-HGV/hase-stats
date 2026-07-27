@@ -2,6 +2,9 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export default function ForgotPasswordForm() {
   const [email, setEmail] = useState("");
@@ -28,7 +31,7 @@ export default function ForgotPasswordForm() {
 
   if (sent) {
     return (
-      <p style={{ margin: 0 }}>
+      <p className="text-sm">
         Wenn ein Account mit dieser Email existiert, wurde gerade eine Mail mit
         einem Link verschickt. Bitte den Posteingang prüfen.
       </p>
@@ -36,23 +39,22 @@ export default function ForgotPasswordForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} style={{ display: "grid", gap: 12 }}>
-      <label>
-        <span className="muted" style={{ fontSize: 13 }}>
-          Email
-        </span>
-        <input
+    <form onSubmit={onSubmit} className="grid gap-4">
+      <div className="grid gap-1.5">
+        <Label htmlFor="email">Email</Label>
+        <Input
+          id="email"
           type="email"
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           autoComplete="email"
         />
-      </label>
-      <button className="btn" type="submit" disabled={loading}>
+      </div>
+      <Button type="submit" size="lg" disabled={loading}>
         {loading ? "Sende…" : "Reset-Mail senden"}
-      </button>
-      {err ? <div className="error">{err}</div> : null}
+      </Button>
+      {err ? <p className="text-sm text-destructive">{err}</p> : null}
     </form>
   );
 }

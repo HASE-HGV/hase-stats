@@ -3,6 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export default function SignupForm() {
   const router = useRouter();
@@ -40,12 +43,11 @@ export default function SignupForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} style={{ display: "grid", gap: 12 }}>
-      <label>
-        <span className="muted" style={{ fontSize: 13 }}>
-          Nutzername
-        </span>
-        <input
+    <form onSubmit={onSubmit} className="grid gap-4">
+      <div className="grid gap-1.5">
+        <Label htmlFor="username">Nutzername</Label>
+        <Input
+          id="username"
           type="text"
           required
           minLength={2}
@@ -55,24 +57,22 @@ export default function SignupForm() {
           value={username}
           onChange={(e) => setUsername(e.target.value)}
         />
-      </label>
-      <label>
-        <span className="muted" style={{ fontSize: 13 }}>
-          Email
-        </span>
-        <input
+      </div>
+      <div className="grid gap-1.5">
+        <Label htmlFor="email">Email</Label>
+        <Input
+          id="email"
           type="email"
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           autoComplete="email"
         />
-      </label>
-      <label>
-        <span className="muted" style={{ fontSize: 13 }}>
-          Passwort (min. 8 Zeichen)
-        </span>
-        <input
+      </div>
+      <div className="grid gap-1.5">
+        <Label htmlFor="password">Passwort (min. 8 Zeichen)</Label>
+        <Input
+          id="password"
           type="password"
           required
           minLength={8}
@@ -80,12 +80,12 @@ export default function SignupForm() {
           onChange={(e) => setPassword(e.target.value)}
           autoComplete="new-password"
         />
-      </label>
-      <button className="btn" type="submit" disabled={loading}>
+      </div>
+      <Button type="submit" size="lg" disabled={loading}>
         {loading ? "Einen Moment…" : "Registrieren"}
-      </button>
-      {err ? <div className="error">{err}</div> : null}
-      {info ? <div className="muted">{info}</div> : null}
+      </Button>
+      {err ? <p className="text-sm text-destructive">{err}</p> : null}
+      {info ? <p className="text-sm text-muted-foreground">{info}</p> : null}
     </form>
   );
 }

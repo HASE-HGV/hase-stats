@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
 
 export default function DeleteShameButton({ id }: { id: string }) {
   const router = useRouter();
@@ -27,16 +28,17 @@ export default function DeleteShameButton({ id }: { id: string }) {
   }
 
   return (
-    <>
-      <button
-        className="btn secondary"
+    <div className="flex flex-col items-end gap-1">
+      <Button
+        variant="destructive"
+        size="sm"
         onClick={onClick}
         disabled={loading}
         title="Admin: Eintrag löschen"
       >
         {loading ? "…" : "Löschen"}
-      </button>
-      {err ? <div className="error" style={{ marginTop: 6 }}>{err}</div> : null}
-    </>
+      </Button>
+      {err ? <p className="text-xs text-destructive">{err}</p> : null}
+    </div>
   );
 }

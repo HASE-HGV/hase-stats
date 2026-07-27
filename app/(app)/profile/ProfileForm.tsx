@@ -3,6 +3,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export default function ProfileForm({
   userId,
@@ -63,40 +67,29 @@ export default function ProfileForm({
   }
 
   return (
-    <form onSubmit={onSubmit} style={{ display: "grid", gap: 14 }}>
-      <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
-        {avatarUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={avatarUrl} alt="" className="avatar lg" />
-        ) : (
-          <div
-            className="avatar lg"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 22,
-            }}
-          >
+    <form onSubmit={onSubmit} className="grid gap-4">
+      <div className="flex items-center gap-4">
+        <Avatar size="lg" className="size-16">
+          {avatarUrl ? <AvatarImage src={avatarUrl} alt="" /> : null}
+          <AvatarFallback className="text-xl">
             {username[0]?.toUpperCase() ?? "?"}
-          </div>
-        )}
-        <label style={{ flex: 1 }}>
-          <span className="muted" style={{ fontSize: 13 }}>
-            Profilbild (optional)
-          </span>
-          <input
+          </AvatarFallback>
+        </Avatar>
+        <div className="grid flex-1 gap-1.5">
+          <Label htmlFor="avatar">Profilbild (optional)</Label>
+          <Input
+            id="avatar"
             type="file"
             accept="image/*"
+            className="py-2"
             onChange={(e) => setFile(e.target.files?.[0] ?? null)}
           />
-        </label>
+        </div>
       </div>
-      <label>
-        <span className="muted" style={{ fontSize: 13 }}>
-          Nutzername
-        </span>
-        <input
+      <div className="grid gap-1.5">
+        <Label htmlFor="username">Nutzername</Label>
+        <Input
+          id="username"
           type="text"
           required
           minLength={2}
@@ -104,14 +97,14 @@ export default function ProfileForm({
           value={username}
           onChange={(e) => setUsername(e.target.value)}
         />
-      </label>
-      <div>
-        <button className="btn" type="submit" disabled={loading}>
-          {loading ? "Speichere…" : "Speichern"}
-        </button>
       </div>
-      {err ? <div className="error">{err}</div> : null}
-      {info ? <div className="muted">{info}</div> : null}
+      <div>
+        <Button type="submit" size="lg" disabled={loading}>
+          {loading ? "Speichere…" : "Speichern"}
+        </Button>
+      </div>
+      {err ? <p className="text-sm text-destructive">{err}</p> : null}
+      {info ? <p className="text-sm text-muted-foreground">{info}</p> : null}
     </form>
   );
 }

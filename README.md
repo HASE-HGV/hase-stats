@@ -15,7 +15,8 @@ optimiert für ein Display auf einem Raspberry Pi im Büro.
 
 ## Stack
 
-- Next.js 15 (App Router, TypeScript, **kein Tailwind** — plain CSS + CSS Modules)
+- Next.js 15 (App Router, TypeScript)
+- **Tailwind CSS v4 + shadcn/ui** (Base UI Primitives) — dunkles Theme, Akzent Pink
 - Supabase (Postgres + Auth + Storage)
 - Vercel für Hosting
 
