@@ -1,45 +1,30 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
+import ConfirmDialogButton from "@/components/ConfirmDialogButton";
 
 export default function DeactivateButton({ id }: { id: string }) {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
-
-  async function onClick() {
-    if (!confirm("Aufgabe entfernen? Bereits bestätigte Deeds bleiben erhalten.")) {
-      return;
-    }
-    setLoading(true);
-    setErr(null);
-    const res = await fetch("/api/admin/template/deactivate", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ id }),
-    });
-    setLoading(false);
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({ error: res.statusText }));
-      setErr(body.error ?? "Fehler beim Entfernen.");
-      return;
-    }
-    router.refresh();
-  }
 
   return (
-    <>
-      <Button
-        variant="destructive"
-        size="sm"
-        onClick={onClick}
-        disabled={loading}
-      >
-        {loading ? "…" : "Entfernen"}
-      </Button>
-      {err ? <p className="mt-1.5 text-xs text-destructive">{err}</p> : null}
-    </>
+    <ConfirmDialogButton
+      triggerLabel="Entfernen"
+      title="Aufgabe entfernen?"
+      description="Bereits bestätigte Deeds bleiben erhalten. Die Aufgabe wird nur aus der Liste ausgeblendet."
+      confirmLabel="Entfernen"
+      onConfirm={async () => {
+        const res = await fetch("/api/admin/template/deactivate", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ id }),
+        });
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({ error: res.statusText }));
+          return body.error ?? "Fehler beim Entfernen.";
+        }
+        router.refresh();
+        return null;
+      }}
+    />
   );
 }

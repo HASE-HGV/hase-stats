@@ -1,44 +1,31 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
+import ConfirmDialogButton from "@/components/ConfirmDialogButton";
 
 export default function DeleteShameButton({ id }: { id: string }) {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
-
-  async function onClick() {
-    if (!confirm("Diesen Shame-Eintrag dauerhaft löschen?")) return;
-    setLoading(true);
-    setErr(null);
-    const res = await fetch("/api/admin/shame/delete", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ id }),
-    });
-    setLoading(false);
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({ error: res.statusText }));
-      setErr(body.error ?? "Fehler beim Löschen.");
-      return;
-    }
-    router.refresh();
-  }
 
   return (
-    <div className="flex flex-col items-end gap-1">
-      <Button
-        variant="destructive"
-        size="sm"
-        onClick={onClick}
-        disabled={loading}
-        title="Admin: Eintrag löschen"
-      >
-        {loading ? "…" : "Löschen"}
-      </Button>
-      {err ? <p className="text-xs text-destructive">{err}</p> : null}
-    </div>
+    <ConfirmDialogButton
+      triggerLabel="Löschen"
+      triggerTitle="Admin: Eintrag löschen"
+      title="Shame-Eintrag löschen?"
+      description="Dieser Eintrag wird dauerhaft entfernt. Das kann nicht rückgängig gemacht werden."
+      confirmLabel="Löschen"
+      onConfirm={async () => {
+        const res = await fetch("/api/admin/shame/delete", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ id }),
+        });
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({ error: res.statusText }));
+          return body.error ?? "Fehler beim Löschen.";
+        }
+        router.refresh();
+        return null;
+      }}
+    />
   );
 }
