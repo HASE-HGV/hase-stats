@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { GoodDeedTemplate } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import FileAttachment from "@/components/FileAttachment";
 import {
   Select,
   SelectContent,
@@ -156,15 +156,14 @@ export default function NewDeedForm({
         </div>
       ) : null}
       <div className="grid gap-1.5">
-        <Label htmlFor="deed-photo">Foto als Beweis</Label>
-        <Input
-          id="deed-photo"
-          type="file"
+        <Label>Foto als Beweis</Label>
+        <FileAttachment
+          file={file}
+          onFileChange={setFile}
           accept="image/*"
           capture="environment"
-          required
-          className="py-2"
-          onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+          idleLabel="Foto aufnehmen oder auswählen"
+          idleHint="Tippen zum Aufnehmen oder Hochladen"
         />
       </div>
       <div>

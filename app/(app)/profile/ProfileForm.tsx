@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import FileAttachment from "@/components/FileAttachment";
 
 export default function ProfileForm({
   userId,
@@ -76,13 +77,13 @@ export default function ProfileForm({
           </AvatarFallback>
         </Avatar>
         <div className="grid flex-1 gap-1.5">
-          <Label htmlFor="avatar">Profilbild (optional)</Label>
-          <Input
-            id="avatar"
-            type="file"
+          <Label>Profilbild (optional)</Label>
+          <FileAttachment
+            file={file}
+            onFileChange={setFile}
             accept="image/*"
-            className="py-2"
-            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+            idleLabel="Profilbild wählen"
+            idleHint="PNG oder JPG"
           />
         </div>
       </div>
