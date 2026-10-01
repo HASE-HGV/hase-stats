@@ -3,9 +3,14 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { format, parseISO } from "date-fns";
+import { toast } from "sonner";
+import { PencilIcon } from "lucide-react";
 import type { Profile, QuoteLine } from "@/lib/types";
-import { Button } from "@/components/ui/button";
 import DatePicker from "@/components/DatePicker";
+import { Button } from "@/components/ui/button";
+import { Field, FieldLabel } from "@/components/ui/field";
+import RowActions from "@/components/row-actions";
+import { FormError } from "@/components/form-parts";
 import QuoteLinesEditor, {
   buildLinesPayload,
   emptyLine,
@@ -103,60 +108,71 @@ export default function EditQuoteForm({
     });
     setLoading(false);
     if (!res.ok) {
-      const body = await res.json().catch(() => ({ error: res.statusText }));
+      const body = await res.json().catch(() => ({}));
       setErr(body.error ?? "Fehler beim Speichern.");
       return;
     }
     setOpen(false);
+    toast.success("Zitat gespeichert");
     router.refresh();
   }
 
-  if (!open) {
-    return (
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => {
-          if (lines.length === 0) setLines([emptyLine()]);
-          setOpen(true);
-        }}
-        title="Admin: Zitat bearbeiten"
-      >
-        Bearbeiten
-      </Button>
-    );
-  }
-
   return (
-    <form onSubmit={onSubmit} className="mt-2 grid w-full gap-2">
-      <QuoteLinesEditor
-        profiles={profiles}
-        selfId={selfId}
-        lines={lines}
-        onChange={setLines}
+    <>
+      <RowActions
+        label="Aktionen für dieses Zitat"
+        actions={[
+          {
+            label: "Bearbeiten",
+            icon: PencilIcon,
+            onSelect: () => {
+              if (lines.length === 0) setLines([emptyLine()]);
+              setOpen(true);
+            },
+          },
+        ]}
       />
-      <DatePicker
-        value={saidOn}
-        onChange={setSaidOn}
-        placeholder="Wann gesagt? (optional)"
-      />
-      <div className="flex gap-2">
-        <Button type="submit" size="sm" disabled={loading}>
-          {loading ? "…" : "Speichern"}
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            setOpen(false);
-            reset();
-          }}
+
+      {open ? (
+        <form
+          onSubmit={onSubmit}
+          className="mt-3 grid gap-3 border-t border-border pt-3"
         >
-          Abbrechen
-        </Button>
-      </div>
-      {err ? <p className="text-sm text-destructive">{err}</p> : null}
-    </form>
+          <QuoteLinesEditor
+            profiles={profiles}
+            selfId={selfId}
+            lines={lines}
+            onChange={setLines}
+            idPrefix={`edit-quote-${id}`}
+          />
+          <Field>
+            <FieldLabel htmlFor={`edit-quote-date-${id}`}>Wann gesagt?</FieldLabel>
+            <DatePicker
+              id={`edit-quote-date-${id}`}
+              value={saidOn}
+              onChange={setSaidOn}
+              placeholder="Datum wählen"
+            />
+          </Field>
+          <FormError message={err} />
+          <div className="flex flex-wrap gap-2">
+            <Button type="submit" size="sm" disabled={loading}>
+              {loading ? "…" : "Speichern"}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setOpen(false);
+                reset();
+              }}
+            >
+              Abbrechen
+            </Button>
+          </div>
+        </form>
+      ) : null}
+    </>
   );
 }

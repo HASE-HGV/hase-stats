@@ -3,9 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Field, FieldLabel } from "@/components/ui/field";
+import { FormError, SubmitButton } from "@/components/form-parts";
+import { CircleCheckIcon } from "lucide-react";
 
 export default function ResetPasswordForm() {
   const router = useRouter();
@@ -18,10 +20,6 @@ export default function ResetPasswordForm() {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setErr(null);
-    if (pw.length < 6) {
-      setErr("Mindestens 6 Zeichen.");
-      return;
-    }
     if (pw !== pw2) {
       setErr("Passwörter stimmen nicht überein.");
       return;
@@ -38,45 +36,54 @@ export default function ResetPasswordForm() {
     setTimeout(() => {
       router.push("/wall");
       router.refresh();
-    }, 1500);
+    }, 1200);
   }
 
   if (done) {
     return (
-      <p className="text-sm">Passwort gespeichert. Du wirst weitergeleitet …</p>
+      <Alert className="border-success/25 bg-success/10">
+        <CircleCheckIcon aria-hidden className="text-success" />
+        <AlertDescription>
+          Passwort gespeichert. Du wirst weitergeleitet …
+        </AlertDescription>
+      </Alert>
     );
   }
 
   return (
-    <form onSubmit={onSubmit} className="grid gap-4">
-      <div className="grid gap-1.5">
-        <Label htmlFor="pw">Neues Passwort</Label>
+    <form onSubmit={onSubmit} className="grid gap-5">
+      <Field>
+        <FieldLabel htmlFor="pw">Neues Passwort</FieldLabel>
         <Input
           id="pw"
           type="password"
           required
-          minLength={6}
+          minLength={8}
           value={pw}
           onChange={(e) => setPw(e.target.value)}
           autoComplete="new-password"
+          autoFocus
         />
-      </div>
-      <div className="grid gap-1.5">
-        <Label htmlFor="pw2">Wiederholen</Label>
+      </Field>
+
+      <Field>
+        <FieldLabel htmlFor="pw2">Wiederholen</FieldLabel>
         <Input
           id="pw2"
           type="password"
           required
-          minLength={6}
+          minLength={8}
           value={pw2}
           onChange={(e) => setPw2(e.target.value)}
           autoComplete="new-password"
         />
-      </div>
-      <Button type="submit" size="lg" disabled={loading}>
-        {loading ? "Speichere…" : "Passwort speichern"}
-      </Button>
-      {err ? <p className="text-sm text-destructive">{err}</p> : null}
+      </Field>
+
+      <FormError message={err} />
+
+      <SubmitButton loading={loading} loadingLabel="Speichere…">
+        Passwort speichern
+      </SubmitButton>
     </form>
   );
 }

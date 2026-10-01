@@ -3,16 +3,17 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
+import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/lib/types";
-import { Button } from "@/components/ui/button";
 import DatePicker from "@/components/DatePicker";
-import { Label } from "@/components/ui/label";
+import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import QuoteLinesEditor, {
   buildLinesPayload,
   emptyLine,
   type LineDraft,
 } from "@/components/QuoteLinesEditor";
+import { FormError, SubmitButton } from "@/components/form-parts";
 
 export default function NewQuoteForm({
   profiles,
@@ -53,39 +54,42 @@ export default function NewQuoteForm({
     }
     setLines([emptyLine()]);
     setSaidOn(undefined);
+    toast.success("Zitat hinzugefügt");
     router.refresh();
   }
 
   return (
-    <form onSubmit={onSubmit} className="grid gap-3">
-      <div className="grid gap-1.5">
-        <Label>Zitat / Dialog</Label>
-        <p className="text-xs text-muted-foreground">
-          Eine Zeile pro Sprecher. Für einen Wortwechsel mehrere Zeilen
+    <form onSubmit={onSubmit} className="grid gap-5">
+      <Field>
+        <FieldLabel>Zitat / Dialog</FieldLabel>
+        <FieldDescription>
+          Eine Zeile pro Sprecher:in. Für einen Wortwechsel mehrere Zeilen
           hinzufügen und jeweils die Person wählen.
-        </p>
+        </FieldDescription>
         <QuoteLinesEditor
           profiles={profiles}
           selfId={selfId}
           lines={lines}
           onChange={setLines}
+          idPrefix="new-quote"
         />
-      </div>
-      <div className="grid gap-1.5">
-        <Label htmlFor="said-on">Wann gesagt? (optional)</Label>
+      </Field>
+
+      <Field>
+        <FieldLabel htmlFor="said-on">Wann gesagt?</FieldLabel>
         <DatePicker
           id="said-on"
           value={saidOn}
           onChange={setSaidOn}
           placeholder="Datum wählen"
         />
-      </div>
-      <div>
-        <Button type="submit" size="lg" disabled={loading}>
-          {loading ? "Speichere…" : "Zitat hinzufügen"}
-        </Button>
-      </div>
-      {err ? <p className="text-sm text-destructive">{err}</p> : null}
+      </Field>
+
+      <FormError message={err} />
+
+      <SubmitButton loading={loading} loadingLabel="Speichere…">
+        Zitat hinzufügen
+      </SubmitButton>
     </form>
   );
 }

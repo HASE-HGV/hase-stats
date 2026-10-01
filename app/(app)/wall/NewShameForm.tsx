@@ -4,9 +4,12 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/lib/types";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Field,
+  FieldDescription,
+  FieldLabel,
+} from "@/components/ui/field";
 import {
   Select,
   SelectContent,
@@ -14,6 +17,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { FormError, SubmitButton } from "@/components/form-parts";
+
+const MAX_REASON = 500;
 
 export default function NewShameForm({
   profiles,
@@ -60,16 +66,16 @@ export default function NewShameForm({
   }
 
   return (
-    <form onSubmit={onSubmit} className="grid gap-3">
-      <div className="grid gap-1.5">
-        <Label>Person</Label>
+    <form onSubmit={onSubmit} className="grid gap-5">
+      <Field>
+        <FieldLabel htmlFor="shame-target">Person</FieldLabel>
         <Select
           items={items}
           value={targetId || null}
           onValueChange={(v) => setTargetId((v as string) ?? "")}
         >
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="— auswählen —" />
+          <SelectTrigger id="shame-target" className="w-full">
+            <SelectValue placeholder="Person auswählen" />
           </SelectTrigger>
           <SelectContent>
             {items.map((it) => (
@@ -79,25 +85,35 @@ export default function NewShameForm({
             ))}
           </SelectContent>
         </Select>
-      </div>
-      <div className="grid gap-1.5">
-        <Label>Grund</Label>
+      </Field>
+
+      <Field>
+        <FieldLabel htmlFor="shame-reason">Grund</FieldLabel>
         <Textarea
+          id="shame-reason"
           required
           minLength={1}
-          maxLength={500}
+          maxLength={MAX_REASON}
           rows={3}
           value={reason}
           onChange={(e) => setReason(e.target.value)}
           placeholder="z.B. hat die Kaffeetasse nicht gespült"
+          className="resize-y"
         />
-      </div>
-      <div>
-        <Button type="submit" size="lg" disabled={loading}>
-          {loading ? "Speichere…" : "Auf Wall of Shame setzen"}
-        </Button>
-      </div>
-      {err ? <p className="text-sm text-destructive">{err}</p> : null}
+        <FieldDescription>
+          {reason.length}/{MAX_REASON} Zeichen
+        </FieldDescription>
+      </Field>
+
+      <FormError message={err} />
+
+      <SubmitButton
+        loading={loading}
+        loadingLabel="Speichere…"
+        disabled={!targetId || reason.trim().length === 0}
+      >
+        Auf Wall of Shame setzen
+      </SubmitButton>
     </form>
   );
 }

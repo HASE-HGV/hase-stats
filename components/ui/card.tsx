@@ -37,7 +37,9 @@ function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="card-title"
-      className={cn("font-heading text-base font-medium", className)}
+      // Bewusst kein <h2>: Karten-Titel sind visuelle Ebenen unter dem
+      // Seiten-<h1> und würden sonst die Heading-Struktur überspringen.
+      className={cn("font-heading text-base font-semibold", className)}
       {...props}
     />
   )

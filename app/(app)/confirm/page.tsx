@@ -1,12 +1,22 @@
 import { createClient } from "@/lib/supabase/server";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@/components/ui/avatar";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
+import { Separator } from "@/components/ui/separator";
+import PageHeader from "@/components/page-header";
+import UserAvatar from "@/components/user-avatar";
+import { relativeTime } from "@/components/relative-time";
 import ConfirmButton from "./ConfirmButton";
+import ConfirmProgress from "./ConfirmProgress";
 import DeleteDeedButton from "../deeds/DeleteDeedButton";
+import { CheckCircle2Icon, TriangleAlertIcon } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -56,65 +66,80 @@ export default async function ConfirmPage() {
   );
 
   return (
-    <>
-      <h1 className="mb-2 text-2xl font-bold sm:text-3xl">
-        Good Deeds bestätigen
-      </h1>
-      <p className="mb-4 text-muted-foreground">
-        Zwei Bestätigungen aus verschiedenen Personen sind nötig, bevor der von
-        der einreichenden Person gewählte Eintrag von der Wall of Shame
-        entfernt wird.
-      </p>
+    <div className="page">
+        <PageHeader
+          title="Good Deeds bestätigen"
+          description="Zwei Bestätigungen aus verschiedenen Personen sind nötig, bevor der gewählte Eintrag von der Wall of Shame verschwindet."
+          meta={
+            actionable.length > 0 ? (
+              <Badge>{actionable.length} offen</Badge>
+            ) : null
+          }
+        />
 
-      {error ? (
-        <p className="text-sm text-destructive">{error.message}</p>
-      ) : null}
+        {error ? (
+          <Alert variant="destructive" className="bg-destructive/10">
+            <TriangleAlertIcon aria-hidden />
+            <AlertDescription>{error.message}</AlertDescription>
+          </Alert>
+        ) : null}
 
-      {actionable.length === 0 ? (
-        <p className="text-muted-foreground">Nichts zu bestätigen. 👍</p>
-      ) : (
-        <ul className="grid list-none gap-3.5 p-0">
-          {actionable.map((d) => {
-            const label = d.template?.title ?? d.description ?? "Good Deed";
-            return (
-              <li key={d.id}>
-                <Card>
-                  <CardContent className="flex flex-col gap-3.5 sm:flex-row sm:items-start">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={d.photo_url}
-                      alt=""
-                      className="size-24 shrink-0 rounded-lg bg-black object-cover sm:size-[140px]"
-                    />
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <Avatar className="size-7">
-                          {d.author.avatar_url ? (
-                            <AvatarImage src={d.author.avatar_url} alt="" />
-                          ) : null}
-                          <AvatarFallback className="text-xs">
-                            {d.author.username[0]?.toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <strong>@{d.author.username}</strong>
+        {actionable.length === 0 ? (
+          <Empty className="border bg-card/40 py-14">
+            <EmptyHeader>
+              <EmptyMedia variant="icon" className="bg-success/15">
+                <CheckCircle2Icon className="text-success" />
+              </EmptyMedia>
+              <EmptyTitle>Nichts zu bestätigen</EmptyTitle>
+              <EmptyDescription>
+                Sobald jemand einen Good Deed einreicht, kannst du ihn hier
+                prüfen und bestätigen.
+              </EmptyDescription>
+            </EmptyHeader>
+          </Empty>
+        ) : (
+          <ul className="stack list-none p-0">
+            {actionable.map((d) => {
+              const label = d.template?.title ?? d.description ?? "Good Deed";
+              return (
+                <li key={d.id}>
+                  <Card>
+                    <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-start">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={d.photo_url}
+                        alt={`Foto-Beweis für ${label}`}
+                        className="aspect-[4/3] w-full shrink-0 rounded-xl bg-muted object-cover sm:size-[9rem]"
+                      />
+                      <div className="flex min-w-0 flex-1 flex-col">
+                        <div className="flex items-center gap-2">
+                          <UserAvatar
+                            username={d.author.username}
+                            avatarUrl={d.author.avatar_url}
+                            size="xs"
+                          />
+                          <span className="text-sm font-medium">
+                            @{d.author.username}
+                          </span>
+                        </div>
+                        <p className="mt-2 text-pretty leading-relaxed">{label}</p>
+                        <Separator className="my-3" />
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                          <ConfirmButton deedId={d.id} userId={user!.id} />
+                          {isAdmin ? <DeleteDeedButton id={d.id} /> : null}
+                          <ConfirmProgress count={d.confirmations.length} />
+                        </div>
+                        <p className="meta mt-2">
+                          eingereicht {relativeTime(d.created_at)}
+                        </p>
                       </div>
-                      <p className="my-2.5">{label}</p>
-                      <div className="flex flex-wrap items-center gap-3">
-                        <ConfirmButton deedId={d.id} userId={user!.id} />
-                        {isAdmin ? <DeleteDeedButton id={d.id} /> : null}
-                        <span className="text-[13px] text-muted-foreground">
-                          {d.confirmations.length} / 2 Bestätigungen ·{" "}
-                          {new Date(d.created_at).toLocaleString("de-DE")}
-                        </span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-    </>
+                    </CardContent>
+                  </Card>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
   );
 }

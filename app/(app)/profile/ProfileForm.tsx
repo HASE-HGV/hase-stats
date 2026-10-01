@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
+import UserAvatar from "@/components/user-avatar";
 import FileAttachment from "@/components/FileAttachment";
+import { FormError, SubmitButton } from "@/components/form-parts";
 
 export default function ProfileForm({
   userId,
@@ -23,13 +24,16 @@ export default function ProfileForm({
   const [avatarUrl, setAvatarUrl] = useState<string | null>(initialAvatarUrl);
   const [file, setFile] = useState<File | null>(null);
   const [err, setErr] = useState<string | null>(null);
-  const [info, setInfo] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const dirty =
+    username !== initialUsername ||
+    file !== null ||
+    (file === null && avatarUrl !== initialAvatarUrl);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setErr(null);
-    setInfo(null);
     setLoading(true);
     const supabase = createClient();
 
@@ -63,21 +67,17 @@ export default function ProfileForm({
     }
     setAvatarUrl(newAvatarUrl);
     setFile(null);
-    setInfo("Gespeichert.");
+    toast.success("Profil gespeichert");
     router.refresh();
   }
 
   return (
-    <form onSubmit={onSubmit} className="grid gap-4">
-      <div className="flex items-center gap-4">
-        <Avatar size="lg" className="size-16">
-          {avatarUrl ? <AvatarImage src={avatarUrl} alt="" /> : null}
-          <AvatarFallback className="text-xl">
-            {username[0]?.toUpperCase() ?? "?"}
-          </AvatarFallback>
-        </Avatar>
-        <div className="grid flex-1 gap-1.5">
-          <Label>Profilbild (optional)</Label>
+    <form onSubmit={onSubmit} className="grid gap-5">
+      <div className="flex items-start gap-4">
+        <UserAvatar username={username} avatarUrl={avatarUrl} size="xl" />
+        <Field className="flex-1">
+          <FieldTitle>Profilbild</FieldTitle>
+          <FieldDescription>PNG oder JPG, quadratig wirkt am besten.</FieldDescription>
           <FileAttachment
             file={file}
             onFileChange={setFile}
@@ -85,10 +85,11 @@ export default function ProfileForm({
             idleLabel="Profilbild wählen"
             idleHint="PNG oder JPG"
           />
-        </div>
+        </Field>
       </div>
-      <div className="grid gap-1.5">
-        <Label htmlFor="username">Nutzername</Label>
+
+      <Field>
+        <FieldLabel htmlFor="username">Nutzername</FieldLabel>
         <Input
           id="username"
           type="text"
@@ -97,15 +98,22 @@ export default function ProfileForm({
           maxLength={32}
           value={username}
           onChange={(e) => setUsername(e.target.value)}
+          autoComplete="username"
         />
-      </div>
-      <div>
-        <Button type="submit" size="lg" disabled={loading}>
-          {loading ? "Speichere…" : "Speichern"}
-        </Button>
-      </div>
-      {err ? <p className="text-sm text-destructive">{err}</p> : null}
-      {info ? <p className="text-sm text-muted-foreground">{info}</p> : null}
+        <FieldDescription>
+          Wird überall angezeigt, zum Beispiel auf der Wall of Shame.
+        </FieldDescription>
+      </Field>
+
+      <FormError message={err} />
+
+      <SubmitButton loading={loading} loadingLabel="Speichere…" disabled={!dirty}>
+        Speichern
+      </SubmitButton>
     </form>
   );
+}
+
+function FieldTitle({ children }: { children: React.ReactNode }) {
+  return <p className="text-sm font-medium">{children}</p>;
 }

@@ -1,13 +1,24 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
+import { Separator } from "@/components/ui/separator";
+import PageHeader from "@/components/page-header";
 import NewTaskForm from "./NewTaskForm";
-import DeactivateButton from "./DeactivateButton";
-import EditTemplateForm from "./EditTemplateForm";
+import TaskRowActions from "./TaskRowActions";
+import { ListChecksIcon, TriangleAlertIcon } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -76,69 +87,99 @@ export default async function WallOfGoodDeedsPage() {
   }));
 
   return (
-    <>
-      <h1 className="mb-2 text-2xl font-bold sm:text-3xl">
-        Wall of Good Deeds
-      </h1>
-      <p className="mb-4 text-muted-foreground">
-        Aufgaben, die als Good Deed gemacht werden können. Alle dürfen neue
-        Aufgaben hinzufügen. Zum Einreichen mit Foto-Beweis zur{" "}
-        <strong>Good Deeds</strong> Seite.
-      </p>
+    <div className="page">
+        <PageHeader
+          title="Wall of Good Deeds"
+          description="Aufgaben, die als Good Deed gelten. Wer eine davon mit Foto-Beweis einreicht, wird von zwei anderen bestätigt."
+          meta={
+            tasks.length > 0 ? (
+              <span className="meta">
+                {tasks.length} {tasks.length === 1 ? "Aufgabe" : "Aufgaben"}
+              </span>
+            ) : null
+          }
+        />
 
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Neue Aufgabe hinzufügen</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <NewTaskForm userId={user!.id} />
-        </CardContent>
-      </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Neue Aufgabe hinzufügen</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <NewTaskForm userId={user!.id} />
+          </CardContent>
+        </Card>
 
-      {error ? (
-        <p className="text-sm text-destructive">{error.message}</p>
-      ) : null}
+        {error ? (
+          <Alert variant="destructive" className="bg-destructive/10">
+            <TriangleAlertIcon aria-hidden />
+            <AlertDescription>{error.message}</AlertDescription>
+          </Alert>
+        ) : null}
 
-      {tasks.length === 0 ? (
-        <p className="text-muted-foreground">Noch keine Aufgaben.</p>
-      ) : (
-        <ul className="grid list-none gap-2.5 p-0">
-          {tasks.map((t) => {
-            const canEdit = t.created_by === user!.id || isAdmin;
-            return (
-              <li key={t.id}>
-                <Card>
-                  <CardContent className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                      <strong className="text-[17px]">{t.title}</strong>
-                      {t.description ? (
-                        <div className="mt-1 text-muted-foreground">
-                          {t.description}
-                        </div>
-                      ) : null}
-                      {t.creator ? (
-                        <div className="mt-1.5 text-xs text-muted-foreground">
-                          hinzugefügt von @{t.creator.username}
-                        </div>
-                      ) : null}
-                    </div>
-                    {canEdit ? (
-                      <div className="flex flex-wrap gap-2">
-                        <EditTemplateForm
-                          id={t.id}
-                          initialTitle={t.title}
-                          initialDescription={t.description}
-                        />
-                        <DeactivateButton id={t.id} />
+        {tasks.length === 0 ? (
+          <Empty className="border bg-card/40 py-14">
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <ListChecksIcon />
+              </EmptyMedia>
+              <EmptyTitle>Noch keine Aufgaben</EmptyTitle>
+              <EmptyDescription>
+                Lege die erste Aufgabe an. Sobald jemand sie mit Foto-Beweis
+                einreicht, kann sie bestätigt werden.
+              </EmptyDescription>
+            </EmptyHeader>
+          </Empty>
+        ) : (
+          <ul className="stack list-none p-0">
+            {tasks.map((t) => {
+              const canEdit = t.created_by === user!.id || isAdmin;
+              return (
+                <li key={t.id}>
+                  <Card>
+                    <CardContent className="flex items-start gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-pretty">{t.title}</p>
+                        {t.description ? (
+                          <p className="mt-1 text-pretty leading-relaxed text-muted-foreground">
+                            {t.description}
+                          </p>
+                        ) : null}
+                        {t.creator ? (
+                          <>
+                            <Separator className="my-2.5" />
+                            <p className="meta">
+                              hinzugefügt von @{t.creator.username}
+                            </p>
+                          </>
+                        ) : null}
+                        {canEdit ? (
+                          <div className="mt-3">
+                            <TaskRowActions
+                              id={t.id}
+                              title={t.title}
+                              description={t.description}
+                            />
+                          </div>
+                        ) : null}
                       </div>
-                    ) : null}
-                  </CardContent>
-                </Card>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-    </>
+                    </CardContent>
+                  </Card>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+
+        <p className="meta text-center">
+          Einen Good Deed mit Beweis reichst du unter{" "}
+          <Link
+            href="/deeds"
+            className="text-foreground underline underline-offset-4"
+          >
+            Good Deed einreichen
+          </Link>{" "}
+          ein.
+        </p>
+      </div>
   );
 }

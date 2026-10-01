@@ -1,20 +1,22 @@
 import { createClient } from "@/lib/supabase/server";
 import type { Profile, QuoteRow } from "@/lib/types";
-import { toDisplayQuote, formatDay } from "@/lib/quotes";
+import { toDisplayQuote } from "@/lib/quotes";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@/components/ui/avatar";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
+import { Separator } from "@/components/ui/separator";
+import PageHeader from "@/components/page-header";
+import UserAvatar from "@/components/user-avatar";
+import { relativeTime, shortDate } from "@/components/relative-time";
 import NewQuoteForm from "./NewQuoteForm";
 import EditQuoteForm from "./EditQuoteForm";
 import DeleteQuoteButton from "./DeleteQuoteButton";
+import { MessageSquareQuoteIcon } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -52,112 +54,128 @@ export default async function QuotesPage() {
   ];
 
   return (
-    <>
-      <h1 className="mb-2 text-2xl font-bold sm:text-3xl">Zitate</h1>
-      <p className="mb-4 text-muted-foreground">
-        Die besten Sprüche aus dem Büro – auch als Dialog mit mehreren Sprechern.
-        Alle dürfen Zitate hinzufügen, Admins können sie bearbeiten und löschen.
-      </p>
-
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Neues Zitat hinzufügen</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <NewQuoteForm profiles={sorted} addedBy={user!.id} selfId={user!.id} />
-        </CardContent>
-      </Card>
-
-      {rows.length === 0 ? (
-        <p className="text-muted-foreground">
-          Noch keine Zitate. Sei die:der Erste! 💬
-        </p>
-      ) : (
-        <ul className="grid list-none gap-3 p-0">
-          {rows.map((q) => {
-            const dq = toDisplayQuote(q, profileMap);
-            const isDialogue = dq.lines.length > 1;
-            const meta = (
-              <span className="text-[13px] text-muted-foreground">
-                {q.said_on ? `gesagt am ${formatDay(q.said_on)} · ` : ""}
-                hinzugefügt von @{q.added_by_username} ·{" "}
-                {new Date(q.created_at).toLocaleString("de-DE")}
+    <div className="page">
+        <PageHeader
+          title="Zitate"
+          description="Die besten Sprüche aus dem Büro — auch als Dialog mit mehreren Sprechern. Alle dürfen Zitate hinzufügen, Admins können sie bearbeiten und löschen."
+          meta={
+            rows.length > 0 ? (
+              <span className="meta">
+                {rows.length} {rows.length === 1 ? "Zitat" : "Zitate"}
               </span>
-            );
+            ) : null
+          }
+        />
 
-            return (
-              <li key={q.id}>
-                <Card>
-                  <CardContent className="flex items-start gap-3.5">
-                    <div className="min-w-0 flex-1">
-                      {isDialogue ? (
-                        <div className="grid gap-2.5">
-                          {dq.lines.map((l, i) => (
-                            <div key={i} className="flex items-start gap-2.5">
-                              <Avatar className="mt-0.5 size-9 shrink-0">
-                                {l.avatarUrl ? (
-                                  <AvatarImage src={l.avatarUrl} alt="" />
-                                ) : null}
-                                <AvatarFallback className="text-xs">
-                                  {l.label.replace(/^@/, "")[0]?.toUpperCase() ??
-                                    "?"}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div className="min-w-0">
-                                <div className="text-sm font-semibold">
-                                  {l.label}
+        <Card>
+          <CardHeader>
+            <CardTitle>Neues Zitat hinzufügen</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <NewQuoteForm profiles={sorted} addedBy={user!.id} selfId={user!.id} />
+          </CardContent>
+        </Card>
+
+        {rows.length === 0 ? (
+          <Empty className="border bg-card/40 py-14">
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <MessageSquareQuoteIcon />
+              </EmptyMedia>
+              <EmptyTitle>Noch keine Zitate</EmptyTitle>
+              <EmptyDescription>
+                Sei die oder der Erste, die oder der einen Spruch beisteuert.
+              </EmptyDescription>
+            </EmptyHeader>
+          </Empty>
+        ) : (
+          <ul className="stack list-none p-0">
+            {rows.map((q) => {
+              const dq = toDisplayQuote(q, profileMap);
+              const isDialogue = dq.lines.length > 1;
+              const meta = (
+                <p className="meta">
+                  {q.said_on ? (
+                    <>
+                      gesagt am {shortDate(q.said_on)} ·{" "}
+                    </>
+                  ) : null}
+                  von @{q.added_by_username} · {relativeTime(q.created_at)}
+                </p>
+              );
+
+              return (
+                <li key={q.id}>
+                  <Card>
+                    <CardContent className="flex items-start gap-3.5">
+                      <div className="min-w-0 flex-1">
+                        {isDialogue ? (
+                          <div className="grid gap-4">
+                            {dq.lines.map((l, i) => (
+                              <div key={i} className="flex items-start gap-3">
+                                <UserAvatar
+                                  username={l.label}
+                                  avatarUrl={l.avatarUrl}
+                                  size="sm"
+                                />
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-sm font-semibold">
+                                    {l.label}
+                                  </p>
+                                  <p className="mt-0.5 text-pretty whitespace-pre-line leading-relaxed">
+                                    {l.text}
+                                  </p>
                                 </div>
-                                <p className="whitespace-pre-line">{l.text}</p>
+                              </div>
+                            ))}
+                            <Separator />
+                            {meta}
+                          </div>
+                        ) : (
+                          <>
+                            <div className="flex items-start gap-3.5">
+                              <UserAvatar
+                                username={dq.lines[0].label}
+                                avatarUrl={dq.lines[0].avatarUrl}
+                                size="lg"
+                              />
+                              <div className="min-w-0 flex-1">
+                                <blockquote className="text-lg leading-snug text-pretty whitespace-pre-line italic">
+                                  „{dq.lines[0].text}“
+                                </blockquote>
+                                <p className="mt-1.5 font-semibold">
+                                  — {dq.lines[0].label}
+                                </p>
                               </div>
                             </div>
-                          ))}
-                          <div className="mt-1">{meta}</div>
-                        </div>
-                      ) : (
-                        <div className="flex items-start gap-3.5">
-                          <Avatar size="lg" className="size-14 shrink-0">
-                            {dq.lines[0].avatarUrl ? (
-                              <AvatarImage src={dq.lines[0].avatarUrl} alt="" />
-                            ) : null}
-                            <AvatarFallback className="text-2xl">
-                              {dq.lines[0].label
-                                .replace(/^@/, "")[0]
-                                ?.toUpperCase() ?? "?"}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="min-w-0 flex-1">
-                            <blockquote className="text-lg leading-snug whitespace-pre-line italic">
-                              „{dq.lines[0].text}“
-                            </blockquote>
-                            <div className="mt-2 flex flex-wrap items-center gap-2.5">
-                              <strong>— {dq.lines[0].label}</strong>
-                              {meta}
-                            </div>
-                          </div>
-                        </div>
-                      )}
+                            <Separator className="my-3" />
+                            {meta}
+                          </>
+                        )}
 
-                      {isAdmin ? (
-                        <EditQuoteForm
-                          id={q.id}
-                          initialText={q.text}
-                          initialLines={q.lines}
-                          initialAuthorProfileId={q.author_profile_id}
-                          initialAuthorName={q.author_name}
-                          initialSaidOn={q.said_on}
-                          profiles={sorted}
-                          selfId={user!.id}
-                        />
-                      ) : null}
-                    </div>
-                    {isAdmin ? <DeleteQuoteButton id={q.id} /> : null}
-                  </CardContent>
-                </Card>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-    </>
+                        {isAdmin ? (
+                          <div className="mt-3 flex justify-end">
+                            <EditQuoteForm
+                              id={q.id}
+                              initialText={q.text}
+                              initialLines={q.lines}
+                              initialAuthorProfileId={q.author_profile_id}
+                              initialAuthorName={q.author_name}
+                              initialSaidOn={q.said_on}
+                              profiles={sorted}
+                              selfId={user!.id}
+                            />
+                          </div>
+                        ) : null}
+                      </div>
+                      {isAdmin ? <DeleteQuoteButton id={q.id} /> : null}
+                    </CardContent>
+                  </Card>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
   );
 }

@@ -3,9 +3,13 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import {
+  Field,
+  FieldDescription,
+  FieldLabel,
+} from "@/components/ui/field";
+import { FormError, SubmitButton } from "@/components/form-parts";
 
 export default function NewTaskForm({ userId }: { userId: string }) {
   const router = useRouter();
@@ -41,9 +45,9 @@ export default function NewTaskForm({ userId }: { userId: string }) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="grid gap-3">
-      <div className="grid gap-1.5">
-        <Label htmlFor="task-title">Titel</Label>
+    <form onSubmit={onSubmit} className="grid gap-5">
+      <Field>
+        <FieldLabel htmlFor="task-title">Titel</FieldLabel>
         <Input
           id="task-title"
           type="text"
@@ -53,9 +57,9 @@ export default function NewTaskForm({ userId }: { userId: string }) {
           onChange={(e) => setTitle(e.target.value)}
           placeholder="z.B. Kaffeemaschine entkalken"
         />
-      </div>
-      <div className="grid gap-1.5">
-        <Label htmlFor="task-desc">Beschreibung (optional)</Label>
+      </Field>
+      <Field>
+        <FieldLabel htmlFor="task-desc">Beschreibung</FieldLabel>
         <Input
           id="task-desc"
           type="text"
@@ -64,13 +68,12 @@ export default function NewTaskForm({ userId }: { userId: string }) {
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Was genau ist zu tun?"
         />
-      </div>
-      <div>
-        <Button type="submit" size="lg" disabled={loading}>
-          {loading ? "Speichere…" : "Aufgabe hinzufügen"}
-        </Button>
-      </div>
-      {err ? <p className="text-sm text-destructive">{err}</p> : null}
+        <FieldDescription> Optional — hilft, wenn der Titel nicht eindeutig ist.</FieldDescription>
+      </Field>
+      <FormError message={err} />
+      <SubmitButton loading={loading} loadingLabel="Speichere…">
+        Aufgabe hinzufügen
+      </SubmitButton>
     </form>
   );
 }

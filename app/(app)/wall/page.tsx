@@ -1,10 +1,6 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import type { Profile, ShameWallRow } from "@/lib/types";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -12,8 +8,20 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
+import { Separator } from "@/components/ui/separator";
+import PageHeader from "@/components/page-header";
+import UserAvatar from "@/components/user-avatar";
+import { relativeTime } from "@/components/relative-time";
 import NewShameForm from "./NewShameForm";
 import DeleteShameButton from "./DeleteShameButton";
+import { ShieldAlertIcon, SparklesIcon } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -48,58 +56,96 @@ export default async function WallPage() {
   ];
 
   return (
-    <>
-      <h1 className="mb-4 text-2xl font-bold sm:text-3xl">Wall of Shame</h1>
+    <div className="page">
+        <PageHeader
+          title="Wall of Shame"
+          description="Wer gerade auf der Wall of Shame steht — und warum."
+          meta={
+            entries.length > 0 ? (
+              <Badge variant="destructive">
+                <ShieldAlertIcon className="size-3" />
+                {entries.length} {entries.length === 1 ? "Eintrag" : "Einträge"}
+              </Badge>
+            ) : null
+          }
+        />
 
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Neuen Eintrag hinzufügen</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <NewShameForm
-            profiles={sorted}
-            reporterId={user!.id}
-            selfId={user!.id}
-          />
-        </CardContent>
-      </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Neuen Eintrag hinzufügen</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <NewShameForm
+              profiles={sorted}
+              reporterId={user!.id}
+              selfId={user!.id}
+            />
+          </CardContent>
+        </Card>
 
-      {entries.length === 0 ? (
-        <p className="text-muted-foreground">
-          Aktuell ist niemand auf der Wall of Shame. 🎉
-        </p>
-      ) : (
-        <ul className="grid list-none gap-3 p-0">
-          {entries.map((e) => (
-            <li key={e.id}>
-              <Card>
-                <CardContent className="flex items-start gap-3.5">
-                  <Avatar size="lg" className="size-14">
-                    {e.target_avatar_url ? (
-                      <AvatarImage src={e.target_avatar_url} alt="" />
-                    ) : null}
-                    <AvatarFallback className="text-2xl">
-                      {e.target_username[0]?.toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2.5">
-                      <strong className="text-lg">@{e.target_username}</strong>
-                      <Badge>WoS</Badge>
-                      <span className="text-[13px] text-muted-foreground">
-                        eingetragen von @{e.reporter_username} ·{" "}
-                        {new Date(e.created_at).toLocaleString("de-DE")}
-                      </span>
+        {entries.length === 0 ? (
+          <Empty className="border bg-card/40 py-14">
+            <EmptyHeader>
+              <EmptyMedia variant="icon" className="bg-success/15">
+                <SparklesIcon className="text-success" />
+              </EmptyMedia>
+              <EmptyTitle>Niemand ist gerade auf der Wall</EmptyTitle>
+              <EmptyDescription>
+                Keine offenen Einträge. Genieß es — oder sei der Erste, der für
+                Aufmerksamkeit sorgt.
+              </EmptyDescription>
+            </EmptyHeader>
+          </Empty>
+        ) : (
+          <ul className="stack list-none p-0">
+            {entries.map((e) => (
+              <li key={e.id}>
+                <Card>
+                  <CardContent className="flex items-start gap-3.5">
+                    <UserAvatar
+                      username={e.target_username}
+                      avatarUrl={e.target_avatar_url}
+                      size="lg"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
+                        <span className="font-semibold">
+                          @{e.target_username}
+                        </span>
+                        <Badge variant="destructive" className="gap-1">
+                          <ShieldAlertIcon className="size-3" />
+                          WoS
+                        </Badge>
+                      </div>
+                      <p className="mt-1.5 text-pretty leading-relaxed">
+                        {e.reason}
+                      </p>
+                      <Separator className="my-2.5" />
+                      <p className="meta">
+                        von @{e.reporter_username} ·{" "}
+                        {relativeTime(e.created_at)}
+                      </p>
                     </div>
-                    <p className="mt-2 text-base">{e.reason}</p>
-                  </div>
-                  {isAdmin ? <DeleteShameButton id={e.id} /> : null}
-                </CardContent>
-              </Card>
-            </li>
-          ))}
-        </ul>
-      )}
-    </>
+                    {isAdmin ? (
+                      <DeleteShameButton id={e.id} username={e.target_username} />
+                    ) : null}
+                  </CardContent>
+                </Card>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <p className="meta text-center">
+          Die Kiosk-Ansicht unter{" "}
+          <Link
+            href="/display"
+            className="text-foreground underline underline-offset-4"
+          >
+            /display
+          </Link>{" "}
+          zeigt dieselbe Liste auf dem Büro-Display.
+        </p>
+      </div>
   );
 }
