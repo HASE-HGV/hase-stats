@@ -7,6 +7,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -49,10 +50,12 @@ export default function RowActions({
   actions = [],
   confirm,
   label = "Aktionen",
+  className,
 }: {
   actions?: RowAction[];
   confirm?: RowConfirmAction;
   label?: string;
+  className?: string;
 }) {
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
@@ -83,7 +86,7 @@ export default function RowActions({
               size="icon-sm"
               aria-label={label}
               title={label}
-              className="-mt-1 -mr-1.5 shrink-0 text-muted-foreground"
+              className={className ?? "-mt-1 -mr-1.5 shrink-0 text-muted-foreground"}
             >
               <MoreHorizontalIcon />
             </Button>
@@ -103,6 +106,7 @@ export default function RowActions({
               </DropdownMenuItem>
             );
           })}
+          {confirm && actions.length > 0 ? <DropdownMenuSeparator /> : null}
           {confirm ? (
             <DropdownMenuItem
               variant="destructive"

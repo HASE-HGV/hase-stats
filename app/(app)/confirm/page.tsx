@@ -69,7 +69,6 @@ export default async function ConfirmPage() {
     <div className="page">
         <PageHeader
           title="Good Deeds bestätigen"
-          description="Zwei Bestätigungen aus verschiedenen Personen sind nötig, bevor der gewählte Eintrag von der Wall of Shame verschwindet."
           meta={
             actionable.length > 0 ? (
               <Badge>{actionable.length} offen</Badge>

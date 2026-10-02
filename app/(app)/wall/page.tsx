@@ -59,7 +59,6 @@ export default async function WallPage() {
     <div className="page">
         <PageHeader
           title="Wall of Shame"
-          description="Wer gerade auf der Wall of Shame steht — und warum."
           meta={
             entries.length > 0 ? (
               <Badge variant="destructive">

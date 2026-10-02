@@ -97,7 +97,6 @@ export default async function DeedsPage() {
     <div className="page">
         <PageHeader
           title="Good Deed einreichen"
-          description="Reiche einen Good Deed mit Foto-Beweis ein. Sobald zwei andere ihn bestätigt haben, verschwindet der gewählte Eintrag von der Wall of Shame."
         />
 
         <StatTiles

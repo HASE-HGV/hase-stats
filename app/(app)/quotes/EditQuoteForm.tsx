@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { format, parseISO } from "date-fns";
 import { toast } from "sonner";
-import { PencilIcon } from "lucide-react";
+import { PencilIcon, Trash2Icon } from "lucide-react";
 import type { Profile, QuoteLine } from "@/lib/types";
 import DatePicker from "@/components/DatePicker";
 import { Button } from "@/components/ui/button";
@@ -121,6 +121,7 @@ export default function EditQuoteForm({
     <>
       <RowActions
         label="Aktionen für dieses Zitat"
+        className="absolute right-4 top-4 z-10 shrink-0 text-muted-foreground"
         actions={[
           {
             label: "Bearbeiten",
@@ -131,6 +132,27 @@ export default function EditQuoteForm({
             },
           },
         ]}
+        confirm={{
+          label: "Zitat löschen",
+          icon: Trash2Icon,
+          title: "Zitat löschen?",
+          description:
+            "Dieses Zitat wird dauerhaft entfernt. Das kann nicht rückgängig gemacht werden.",
+          confirmLabel: "Löschen",
+          onConfirm: async () => {
+            const res = await fetch("/api/admin/quote/delete", {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({ id }),
+            });
+            if (!res.ok) {
+              const body = await res.json().catch(() => ({}));
+              return body.error ?? "Fehler beim Löschen.";
+            }
+            router.refresh();
+            return null;
+          },
+        }}
       />
 
       {open ? (

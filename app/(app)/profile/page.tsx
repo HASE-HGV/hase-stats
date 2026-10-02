@@ -24,7 +24,6 @@ export default async function ProfilePage() {
     <div className="page">
         <PageHeader
           title="Profil"
-          description="Dein Nutzername und dein Profilbild. Beides ist für andere sichtbar."
           meta={isAdmin ? <Badge variant="secondary">Admin</Badge> : null}
         />
 

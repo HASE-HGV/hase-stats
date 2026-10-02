@@ -90,7 +90,6 @@ export default async function WallOfGoodDeedsPage() {
     <div className="page">
         <PageHeader
           title="Wall of Good Deeds"
-          description="Aufgaben, die als Good Deed gelten. Wer eine davon mit Foto-Beweis einreicht, wird von zwei anderen bestätigt."
           meta={
             tasks.length > 0 ? (
               <span className="meta">

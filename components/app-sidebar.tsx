@@ -87,7 +87,16 @@ export function UserBlock({
   );
 }
 
-/** Feste Sidebar für Desktop (md+). Auf schmalen Screens blendet der Wrapper sie aus. */
+/**
+ * Feste Sidebar für Desktop (md+). Auf schmalen Screens blendet der Wrapper sie aus.
+ *
+ * `collapsible="none"` rendert in shadcn kein fixed-Container-Element, sondern ein
+ * normales Flex-Kind mit `h-full`. Der Wrapper von SidebarProvider hat nur
+ * `min-h-svh` und damit keine definite Höhe, also fällt `h-full` auf `auto`
+ * zurück: die Sidebar wird nur so hoch wie ihr Inhalt und scrollt mit der Seite
+ * weg. `h-svh` + `sticky top-0` behebt beides und behält den automatischen
+ * Platz in der Breite, den sonst der `sidebar-gap`-Container übernimmt.
+ */
 export default function AppSidebar({
   username,
   avatarUrl,
@@ -96,7 +105,10 @@ export default function AppSidebar({
   avatarUrl: string | null;
 }) {
   return (
-    <Sidebar collapsible="none" className="hidden md:flex">
+    <Sidebar
+      collapsible="none"
+      className="sticky top-0 hidden h-svh border-r border-sidebar-border md:flex"
+    >
       <SidebarHeader>
         <Link
           href="/wall"

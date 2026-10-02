@@ -15,7 +15,6 @@ import UserAvatar from "@/components/user-avatar";
 import { relativeTime, shortDate } from "@/components/relative-time";
 import NewQuoteForm from "./NewQuoteForm";
 import EditQuoteForm from "./EditQuoteForm";
-import DeleteQuoteButton from "./DeleteQuoteButton";
 import { MessageSquareQuoteIcon } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -57,7 +56,6 @@ export default async function QuotesPage() {
     <div className="page">
         <PageHeader
           title="Zitate"
-          description="Die besten Sprüche aus dem Büro — auch als Dialog mit mehreren Sprechern. Alle dürfen Zitate hinzufügen, Admins können sie bearbeiten und löschen."
           meta={
             rows.length > 0 ? (
               <span className="meta">
@@ -106,8 +104,8 @@ export default async function QuotesPage() {
 
               return (
                 <li key={q.id}>
-                  <Card>
-                    <CardContent className="flex items-start gap-3.5">
+                  <Card className="relative">
+                    <CardContent className="space-y-4 pr-12">
                       <div className="min-w-0 flex-1">
                         {isDialogue ? (
                           <div className="grid gap-4">
@@ -154,21 +152,18 @@ export default async function QuotesPage() {
                         )}
 
                         {isAdmin ? (
-                          <div className="mt-3 flex justify-end">
-                            <EditQuoteForm
-                              id={q.id}
-                              initialText={q.text}
-                              initialLines={q.lines}
-                              initialAuthorProfileId={q.author_profile_id}
-                              initialAuthorName={q.author_name}
-                              initialSaidOn={q.said_on}
-                              profiles={sorted}
-                              selfId={user!.id}
-                            />
-                          </div>
+                          <EditQuoteForm
+                            id={q.id}
+                            initialText={q.text}
+                            initialLines={q.lines}
+                            initialAuthorProfileId={q.author_profile_id}
+                            initialAuthorName={q.author_name}
+                            initialSaidOn={q.said_on}
+                            profiles={sorted}
+                            selfId={user!.id}
+                          />
                         ) : null}
                       </div>
-                      {isAdmin ? <DeleteQuoteButton id={q.id} /> : null}
                     </CardContent>
                   </Card>
                 </li>
