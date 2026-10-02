@@ -1,5 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
-import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import PageHeader from "@/components/page-header";
 import ProfileForm from "./ProfileForm";
 
 export const dynamic = "force-dynamic";
@@ -12,22 +14,31 @@ export default async function ProfilePage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, username, avatar_url")
+    .select("id, username, avatar_url, is_admin, created_at")
     .eq("id", user!.id)
     .single();
 
+  const isAdmin = profile?.is_admin === true;
+
   return (
-    <>
-      <h1 className="mb-4 text-2xl font-bold sm:text-3xl">Profil</h1>
-      <Card>
-        <CardContent>
-          <ProfileForm
-            userId={user!.id}
-            initialUsername={profile?.username ?? ""}
-            initialAvatarUrl={profile?.avatar_url ?? null}
-          />
-        </CardContent>
-      </Card>
-    </>
+    <div className="page">
+        <PageHeader
+          title="Profil"
+          meta={isAdmin ? <Badge variant="secondary">Admin</Badge> : null}
+        />
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Deine Angaben</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ProfileForm
+              userId={user!.id}
+              initialUsername={profile?.username ?? ""}
+              initialAvatarUrl={profile?.avatar_url ?? null}
+            />
+          </CardContent>
+        </Card>
+      </div>
   );
 }

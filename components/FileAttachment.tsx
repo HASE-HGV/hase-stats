@@ -20,6 +20,7 @@ function formatBytes(bytes: number) {
 }
 
 export default function FileAttachment({
+  id,
   file,
   onFileChange,
   accept = "image/*",
@@ -27,6 +28,7 @@ export default function FileAttachment({
   idleLabel = "Datei auswählen",
   idleHint,
 }: {
+  id?: string;
   file: File | null;
   onFileChange: (file: File | null) => void;
   accept?: string;
@@ -59,11 +61,15 @@ export default function FileAttachment({
     <>
       <input
         ref={inputRef}
+        id={id}
         type="file"
         accept={accept}
         capture={capture}
         tabIndex={-1}
-        className="sr-only"
+        // `hidden` statt `sr-only`: shadcn's Attachment setzt `*:w-full` auf
+        // direkte Kinder und würde die sr-only-Breite überschreiben, was auf
+        // schmalen Screens einen horizontalen Scrollbar erzeugt.
+        className="hidden"
         onChange={(e) => onFileChange(e.target.files?.[0] ?? null)}
       />
       {file ? (

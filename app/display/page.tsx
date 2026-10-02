@@ -1,10 +1,13 @@
 import { createClient } from "@/lib/supabase/server";
 import type { Profile, ShameWallRow, QuoteRow } from "@/lib/types";
 import { toDisplayQuote } from "@/lib/quotes";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import UserAvatar from "@/components/user-avatar";
+import { relativeTime } from "@/components/relative-time";
 import QuoteCarousel from "./QuoteCarousel";
+import { ShieldAlertIcon, SparklesIcon } from "lucide-react";
 
 // Re-render every 30s when visited; also client auto-reloads below.
 export const revalidate = 30;
@@ -38,51 +41,58 @@ export default async function DisplayPage() {
     <div
       className="flex h-dvh w-full flex-col gap-6 overflow-hidden p-6 sm:p-8"
       style={{
-        paddingTop: "max(24px, env(safe-area-inset-top))",
-        paddingBottom: "max(24px, env(safe-area-inset-bottom))",
+        paddingTop: "max(24px, var(--sa-top))",
+        paddingRight: "max(32px, var(--sa-right))",
+        paddingBottom: "max(24px, var(--sa-bottom))",
+        paddingLeft: "max(32px, var(--sa-left))",
       }}
     >
       {/* Wall of Shame */}
       <section className="flex min-h-0 flex-1 flex-col gap-4">
         <div className="flex items-baseline justify-between gap-4">
-          <h1 className="text-3xl font-bold sm:text-4xl">Wall of Shame</h1>
-          <span className="text-muted-foreground">
-            {rows.length} offene{rows.length === 1 ? "r" : ""} Eintrag
-            {rows.length === 1 ? "" : "e"}
-          </span>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-semibold sm:text-4xl">
+              Wall of Shame
+            </h1>
+            {rows.length > 0 ? (
+              <Badge variant="destructive" className="gap-1 text-sm">
+                <ShieldAlertIcon className="size-3.5" />
+                {rows.length} {rows.length === 1 ? "Eintrag" : "Einträge"}
+              </Badge>
+            ) : null}
+          </div>
         </div>
 
         {rows.length === 0 ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-4 text-center">
-            <div className="text-7xl">🎉</div>
-            <p className="text-2xl text-muted-foreground">
+            <div className="flex size-20 items-center justify-center rounded-2xl bg-success/15">
+              <SparklesIcon className="size-10 text-success" />
+            </div>
+            <p className="text-2xl font-medium text-balance">
               Niemand ist gerade auf der Wall of Shame.
             </p>
           </div>
         ) : (
-          <ul className="grid min-h-0 flex-1 list-none grid-cols-2 gap-4 overflow-hidden p-0 xl:grid-cols-4">
+          <ul className="grid min-h-0 flex-1 list-none grid-cols-2 gap-4 p-0 xl:grid-cols-4">
             {rows.map((r) => (
               <li key={r.id} className="min-h-0">
                 <Card className="h-full justify-center">
                   <CardContent className="flex items-center gap-4">
-                    <Avatar className="size-14 shrink-0">
-                      {r.target_avatar_url ? (
-                        <AvatarImage src={r.target_avatar_url} alt="" />
-                      ) : null}
-                      <AvatarFallback className="text-xl font-bold">
-                        {r.target_username[0]?.toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
+                    <UserAvatar
+                      username={r.target_username}
+                      avatarUrl={r.target_avatar_url}
+                      size="lg"
+                    />
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="truncate text-lg font-bold">
-                          @{r.target_username}
-                        </span>
-                        <Badge variant="destructive">WoS</Badge>
-                      </div>
-                      <p className="mt-1 line-clamp-2 text-base">{r.reason}</p>
-                      <p className="mt-1 truncate text-xs text-muted-foreground">
-                        von @{r.reporter_username}
+                      <p className="truncate text-lg font-semibold">
+                        @{r.target_username}
+                      </p>
+                      <p className="mt-1 line-clamp-2 text-pretty text-base leading-relaxed">
+                        {r.reason}
+                      </p>
+                      <Separator className="my-2" />
+                      <p className="truncate text-xs text-muted-foreground">
+                        von @{r.reporter_username} · {relativeTime(r.created_at)}
                       </p>
                     </div>
                   </CardContent>
@@ -96,7 +106,7 @@ export default async function DisplayPage() {
       {/* Zitate */}
       {quotes.length > 0 ? (
         <section className="flex shrink-0 flex-col gap-3">
-          <h2 className="text-2xl font-bold sm:text-3xl">Zitate</h2>
+          <h2 className="text-xl font-semibold sm:text-2xl">Zitate</h2>
           <QuoteCarousel quotes={quotes} />
         </section>
       ) : null}

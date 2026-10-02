@@ -2,8 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { CheckIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 
 export default function ConfirmButton({
   deedId,
@@ -14,10 +17,8 @@ export default function ConfirmButton({
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [err, setErr] = useState<string | null>(null);
 
   async function onConfirm() {
-    setErr(null);
     setLoading(true);
     const supabase = createClient();
     const { error } = await supabase.from("good_deed_confirmations").insert({
@@ -26,18 +27,19 @@ export default function ConfirmButton({
     });
     setLoading(false);
     if (error) {
-      setErr(error.message);
+      toast.error("Konnte nicht bestätigt werden", { description: error.message });
       return;
     }
+    toast.success("Bestätigt", {
+      description: "Eine weitere Bestätigung wird noch gebraucht.",
+    });
     router.refresh();
   }
 
   return (
-    <>
-      <Button onClick={onConfirm} disabled={loading}>
-        {loading ? "…" : "Bestätigen"}
-      </Button>
-      {err ? <span className="text-sm text-destructive">{err}</span> : null}
-    </>
+    <Button onClick={onConfirm} disabled={loading} className="w-full sm:w-auto">
+      {loading ? <Spinner /> : <CheckIcon />}
+      {loading ? "Bestätige…" : "Bestätigen"}
+    </Button>
   );
 }

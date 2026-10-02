@@ -1,12 +1,20 @@
+import Link from "next/link";
+import { ShieldAlertIcon, SparklesIcon, InboxIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import type { GoodDeedTemplate } from "@/lib/types";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  Empty,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
+import { Separator } from "@/components/ui/separator";
+import PageHeader from "@/components/page-header";
+import StatusBadge from "@/components/status-badge";
+import { StatTiles } from "@/components/stat-tiles";
+import { relativeTime } from "@/components/relative-time";
 import NewDeedForm from "./NewDeedForm";
 import DeleteDeedButton from "./DeleteDeedButton";
 
@@ -81,84 +89,121 @@ export default async function DeedsPage() {
     (t) => !blockedTemplateIds.has(t.id)
   );
 
+  const pendingCount = (myDeeds ?? []).filter(
+    (d) => d.status === "pending"
+  ).length;
+
   return (
-    <>
-      <h1 className="mb-4 text-2xl font-bold sm:text-3xl">Good Deeds</h1>
+    <div className="page">
+        <PageHeader
+          title="Good Deed einreichen"
+        />
 
-      <Card className="mb-5">
-        <CardContent>
-          <p>
-            Du hast aktuell <strong>{activeShames}</strong>{" "}
-            {activeShames === 1 ? "offenen Eintrag" : "offene Einträge"} auf der
-            Wall of Shame. Reiche einen Good Deed mit Foto ein und wähle den
-            Eintrag aus, der damit aufgelöst werden soll – sobald zwei andere
-            Personen den Deed bestätigen, wird der gewählte Eintrag entfernt.
-          </p>
-        </CardContent>
-      </Card>
+        <StatTiles
+          items={[
+            {
+              label: "offene Einträge",
+              value: activeShames,
+              icon: ShieldAlertIcon,
+              tone: activeShames > 0 ? "destructive" : "success",
+              hint: "auf der Wall",
+            },
+            {
+              label: "wartende Einreichungen",
+              value: pendingCount,
+              icon: InboxIcon,
+              tone: pendingCount > 0 ? "warning" : "default",
+            },
+            {
+              label: "Aufgaben verfügbar",
+              value: availableTemplates.length,
+              icon: SparklesIcon,
+            },
+          ]}
+        />
 
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Neuen Good Deed einreichen</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <NewDeedForm
-            templates={availableTemplates}
-            userId={user!.id}
-            openShames={myOpenShames}
-          />
-        </CardContent>
-      </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Neuen Good Deed einreichen</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <NewDeedForm
+              templates={availableTemplates}
+              userId={user!.id}
+              openShames={myOpenShames}
+            />
+          </CardContent>
+        </Card>
 
-      <h2 className="mb-3 text-xl font-semibold">Meine letzten Einreichungen</h2>
-      {myDeeds && myDeeds.length > 0 ? (
-        <ul className="grid list-none gap-3 p-0">
-          {myDeeds.map((d) => {
-            const label =
-              (d.template as { title?: string } | null)?.title ??
-              d.description ??
-              "Good Deed";
-            const statusLabel =
-              d.status === "approved"
-                ? "Bestätigt"
-                : d.status === "rejected"
-                  ? "Abgelehnt"
-                  : "Wartet auf Bestätigung";
-            return (
-              <li key={d.id}>
-                <Card>
-                  <CardContent className="flex items-start gap-3">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={d.photo_url}
-                      alt=""
-                      className="size-20 shrink-0 rounded-lg object-cover"
-                    />
-                    <div className="flex-1">
-                      <strong>{label}</strong>
-                      <div className="mt-1">
-                        <Badge
-                          variant={
-                            d.status === "approved" ? "default" : "secondary"
-                          }
-                        >
-                          {statusLabel}
-                        </Badge>
-                      </div>
-                      <div className="mt-1 text-[13px] text-muted-foreground">
-                        {new Date(d.created_at).toLocaleString("de-DE")}
-                      </div>
-                    </div>
-                    {isAdmin ? <DeleteDeedButton id={d.id} /> : null}
-                  </CardContent>
-                </Card>
-              </li>
-            );
-          })}
-        </ul>
-      ) : (
-        <p className="text-muted-foreground">Noch keine Einreichungen.</p>
-      )}
-    </>
+        <section className="flex flex-col gap-3">
+          <h2 className="text-lg font-semibold">Meine letzten Einreichungen</h2>
+          {myDeeds && myDeeds.length > 0 ? (
+            <ul className="stack list-none p-0">
+              {myDeeds.map((d) => {
+                const label =
+                  (d.template as { title?: string } | null)?.title ??
+                  d.description ??
+                  "Good Deed";
+                return (
+                  <li key={d.id}>
+                    <Card>
+                      <CardContent className="flex items-start gap-3.5">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={d.photo_url}
+                          alt={`Foto-Beweis für ${label}`}
+                          className="size-16 shrink-0 rounded-xl bg-muted object-cover sm:size-20"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium text-pretty">{label}</p>
+                          <div className="mt-2 flex flex-wrap items-center gap-2">
+                            <StatusBadge status={d.status} />
+                            <span className="meta">
+                              {relativeTime(d.created_at)}
+                            </span>
+                          </div>
+                        </div>
+                        {isAdmin ? <DeleteDeedButton id={d.id} /> : null}
+                      </CardContent>
+                    </Card>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            <Empty className="border bg-card/40 py-12">
+              <EmptyHeader>
+                <EmptyMedia variant="icon">
+                  <InboxIcon />
+                </EmptyMedia>
+                <EmptyTitle>Noch keine Einreichungen</EmptyTitle>
+                <EmptyDescription>
+                  Sobald du einen Good Deed einreichst, siehst du hier den Status.
+                </EmptyDescription>
+              </EmptyHeader>
+            </Empty>
+          )}
+        </section>
+
+        <Separator />
+
+        <p className="meta text-center">
+          Offene Einträge werden automatisch entfernt, sobald zwei Personen deinen{" "}
+          <Link
+            href="/confirm"
+            className="text-foreground underline underline-offset-4"
+          >
+            Good Deed bestätigt
+          </Link>
+          . Details zu den Regeln stehen auf der{" "}
+          <Link
+            href="/good-deeds"
+            className="text-foreground underline underline-offset-4"
+          >
+            Wall of Good Deeds
+          </Link>
+          .
+        </p>
+      </div>
   );
 }

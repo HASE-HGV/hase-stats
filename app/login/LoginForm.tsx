@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Field, FieldLabel } from "@/components/ui/field";
+import { FormError, SubmitButton } from "@/components/form-parts";
 
 export default function LoginForm() {
   const router = useRouter();
@@ -25,7 +26,11 @@ export default function LoginForm() {
     });
     setLoading(false);
     if (error) {
-      setErr(error.message);
+      setErr(
+        error.message === "Invalid login credentials"
+          ? "Email oder Passwort ist falsch."
+          : error.message
+      );
       return;
     }
     router.push("/wall");
@@ -33,9 +38,9 @@ export default function LoginForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="grid gap-4">
-      <div className="grid gap-1.5">
-        <Label htmlFor="email">Email</Label>
+    <form onSubmit={onSubmit} className="grid gap-5">
+      <Field>
+        <FieldLabel htmlFor="email">Email</FieldLabel>
         <Input
           id="email"
           type="email"
@@ -43,10 +48,20 @@ export default function LoginForm() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           autoComplete="email"
+          autoFocus
         />
-      </div>
-      <div className="grid gap-1.5">
-        <Label htmlFor="password">Passwort</Label>
+      </Field>
+
+      <Field>
+        <div className="flex items-baseline justify-between gap-2">
+          <FieldLabel htmlFor="password">Passwort</FieldLabel>
+          <Link
+            href="/auth/forgot-password"
+            className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+          >
+            vergessen?
+          </Link>
+        </div>
         <Input
           id="password"
           type="password"
@@ -55,11 +70,13 @@ export default function LoginForm() {
           onChange={(e) => setPassword(e.target.value)}
           autoComplete="current-password"
         />
-      </div>
-      <Button type="submit" size="lg" disabled={loading}>
-        {loading ? "Einen Moment…" : "Anmelden"}
-      </Button>
-      {err ? <p className="text-sm text-destructive">{err}</p> : null}
+      </Field>
+
+      <FormError message={err} />
+
+      <SubmitButton loading={loading} loadingLabel="Einen Moment…">
+        Anmelden
+      </SubmitButton>
     </form>
   );
 }

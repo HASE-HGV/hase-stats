@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Field, FieldLabel } from "@/components/ui/field";
+import { FormError, SubmitButton } from "@/components/form-parts";
+import { MailCheckIcon } from "lucide-react";
 
 export default function ForgotPasswordForm() {
   const [email, setEmail] = useState("");
@@ -31,17 +33,20 @@ export default function ForgotPasswordForm() {
 
   if (sent) {
     return (
-      <p className="text-sm">
-        Wenn ein Account mit dieser Email existiert, wurde gerade eine Mail mit
-        einem Link verschickt. Bitte den Posteingang prüfen.
-      </p>
+      <Alert className="border-success/25 bg-success/10">
+        <MailCheckIcon aria-hidden className="text-success" />
+        <AlertDescription className="text-pretty">
+          Wenn ein Account mit dieser Email existiert, ist gerade eine Mail mit
+          einem Link unterwegs. Bitte den Posteingang prüfen.
+        </AlertDescription>
+      </Alert>
     );
   }
 
   return (
-    <form onSubmit={onSubmit} className="grid gap-4">
-      <div className="grid gap-1.5">
-        <Label htmlFor="email">Email</Label>
+    <form onSubmit={onSubmit} className="grid gap-5">
+      <Field>
+        <FieldLabel htmlFor="email">Email</FieldLabel>
         <Input
           id="email"
           type="email"
@@ -49,12 +54,15 @@ export default function ForgotPasswordForm() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           autoComplete="email"
+          autoFocus
         />
-      </div>
-      <Button type="submit" size="lg" disabled={loading}>
-        {loading ? "Sende…" : "Reset-Mail senden"}
-      </Button>
-      {err ? <p className="text-sm text-destructive">{err}</p> : null}
+      </Field>
+
+      <FormError message={err} />
+
+      <SubmitButton loading={loading} loadingLabel="Sende…">
+        Reset-Mail senden
+      </SubmitButton>
     </form>
   );
 }

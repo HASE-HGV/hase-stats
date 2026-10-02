@@ -1,12 +1,17 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { toast } from "sonner";
 import type { GoodDeedTemplate } from "@/lib/types";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import FileAttachment from "@/components/FileAttachment";
+import {
+  Field,
+  FieldDescription,
+  FieldLabel,
+  FieldTitle,
+} from "@/components/ui/field";
 import {
   Select,
   SelectContent,
@@ -14,6 +19,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import FileAttachment from "@/components/FileAttachment";
+import { FormError, SubmitButton } from "@/components/form-parts";
 
 type OpenShame = {
   id: string;
@@ -94,23 +101,26 @@ export default function NewDeedForm({
     setTemplateId("");
     setFile(null);
     setTargetShameId("");
+    toast.success("Eingereicht", {
+      description: "Zwei Personen müssen deinen Good Deed noch bestätigen.",
+    });
     router.refresh();
   }
 
   return (
-    <form onSubmit={onSubmit} className="grid gap-3">
-      <div className="grid gap-1.5">
-        <Label>Was hast du getan?</Label>
+    <form onSubmit={onSubmit} className="grid gap-5">
+      <Field>
+        <FieldLabel htmlFor="deed-template">Was hast du getan?</FieldLabel>
         <Select
           items={templateItems}
           value={templateId || null}
           onValueChange={(v) => setTemplateId((v as string) ?? "")}
           disabled={!hasTemplates}
         >
-          <SelectTrigger className="w-full">
+          <SelectTrigger id="deed-template" className="w-full">
             <SelectValue
               placeholder={
-                hasTemplates ? "— auswählen —" : "— keine Aufgabe verfügbar —"
+                hasTemplates ? "Aufgabe auswählen" : "Keine Aufgabe verfügbar"
               }
             />
           </SelectTrigger>
@@ -122,25 +132,28 @@ export default function NewDeedForm({
             ))}
           </SelectContent>
         </Select>
-        <div className="text-xs text-muted-foreground">
+        <FieldDescription>
           Fehlt eine Aufgabe? Auf der{" "}
-          <a href="/good-deeds" className="underline">
+          <Link href="/good-deeds" className="text-primary underline underline-offset-4">
             Wall of Good Deeds
-          </a>{" "}
+          </Link>{" "}
           anlegen. Aufgaben, die gerade auf Bestätigung warten, sind hier
-          ausgeblendet, bis sie bestätigt sind.
-        </div>
-      </div>
+          ausgeblendet.
+        </FieldDescription>
+      </Field>
+
       {hasOpenShames ? (
-        <div className="grid gap-1.5">
-          <Label>Welcher Eintrag soll von der Wall of Shame entfernt werden?</Label>
+        <Field>
+          <FieldLabel htmlFor="deed-target">
+            Welcher Eintrag verschwindet dafür?
+          </FieldLabel>
           <Select
             items={shameItems}
             value={targetShameId || null}
             onValueChange={(v) => setTargetShameId((v as string) ?? "")}
           >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="— auswählen —" />
+            <SelectTrigger id="deed-target" className="w-full">
+              <SelectValue placeholder="Eintrag auswählen" />
             </SelectTrigger>
             <SelectContent>
               {shameItems.map((it) => (
@@ -150,13 +163,15 @@ export default function NewDeedForm({
               ))}
             </SelectContent>
           </Select>
-          <div className="text-xs text-muted-foreground">
-            Wird entfernt, sobald zwei andere den Deed bestätigt haben.
-          </div>
-        </div>
+          <FieldDescription>
+            Wird automatisch entfernt, sobald zwei andere den Deed bestätigt
+            haben.
+          </FieldDescription>
+        </Field>
       ) : null}
-      <div className="grid gap-1.5">
-        <Label>Foto als Beweis</Label>
+
+      <Field>
+        <FieldTitle>Foto als Beweis</FieldTitle>
         <FileAttachment
           file={file}
           onFileChange={setFile}
@@ -165,13 +180,17 @@ export default function NewDeedForm({
           idleLabel="Foto aufnehmen oder auswählen"
           idleHint="Tippen zum Aufnehmen oder Hochladen"
         />
-      </div>
-      <div>
-        <Button type="submit" size="lg" disabled={loading}>
-          {loading ? "Lade hoch…" : "Einreichen"}
-        </Button>
-      </div>
-      {err ? <p className="text-sm text-destructive">{err}</p> : null}
+      </Field>
+
+      <FormError message={err} />
+
+      <SubmitButton
+        loading={loading}
+        loadingLabel="Lade hoch…"
+        disabled={!hasTemplates || !templateId || !file}
+      >
+        Einreichen
+      </SubmitButton>
     </form>
   );
 }

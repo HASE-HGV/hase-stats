@@ -16,7 +16,8 @@ optimiert für ein Display auf einem Raspberry Pi im Büro.
 ## Stack
 
 - Next.js 15 (App Router, TypeScript)
-- **Tailwind CSS v4 + shadcn/ui** (Base UI Primitives) — dunkles Theme, Akzent Pink
+- **Tailwind CSS v4 + shadcn/ui** (Base UI Primitives) — dunkles Theme, neutraler
+  Grund mit einem blau-violetten Akzent, plus semantische Farben für Erfolg und Warnung
 - Supabase (Postgres + Auth + Storage)
 - Vercel für Hosting
 
@@ -35,7 +36,8 @@ optimiert für ein Display auf einem Raspberry Pi im Büro.
 
 ```bash
 cp .env.local.example .env.local
-# NEXT_PUBLIC_SUPABASE_URL und NEXT_PUBLIC_SUPABASE_ANON_KEY eintragen
+# NEXT_PUBLIC_SUPABASE_URL und NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY eintragen
+# (SUPABASE_SERVICE_ROLE_KEY nur nötig, wenn Admin-Routen serverseitig geprüft werden)
 
 npm install
 npm run dev
@@ -47,7 +49,7 @@ App läuft dann auf <http://localhost:3000>.
 
 1. Repo auf GitHub pushen
 2. In Vercel importieren
-3. Env-Variablen setzen: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+3. Env-Variablen setzen: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
 4. Deploy
 
 ### 4. Raspberry Pi Kiosk
@@ -64,16 +66,20 @@ Die Seite aktualisiert sich automatisch alle 30 Sekunden (meta refresh + ISR).
 
 ## Routen
 
-| Pfad        | Auth | Zweck                                         |
-|-------------|------|-----------------------------------------------|
-| `/`         | ja   | Redirect auf `/wall`                          |
-| `/login`    | nein | Login                                         |
-| `/signup`   | nein | Registrierung                                 |
-| `/wall`     | ja   | Wall of Shame – Liste + neuer Eintrag         |
-| `/deeds`    | ja   | Good Deeds einreichen (mit Foto)              |
-| `/confirm`  | ja   | Offene Good Deeds anderer Personen bestätigen |
-| `/profile`  | ja   | Username + Avatar pflegen                     |
-| `/display`  | nein | Vollbild-Kiosk-Ansicht für den Raspberry Pi   |
+| Pfad               | Auth | Zweck                                         |
+|--------------------|------|-----------------------------------------------|
+| `/`                | ja   | Redirect auf `/wall`                          |
+| `/login`           | nein | Login                                         |
+| `/signup`          | nein | Registrierung                                 |
+| `/auth/forgot-password` | nein | Passwort-Reset anfordern                 |
+| `/auth/reset-password`  | nein | Neues Passwort setzen                     |
+| `/wall`            | ja   | Wall of Shame – Liste + neuer Eintrag         |
+| `/good-deeds`      | ja   | Aufgabenliste pflegen (Eintrag/Aufgabe)       |
+| `/deeds`           | ja   | Good Deeds einreichen (mit Foto)              |
+| `/confirm`         | ja   | Offene Good Deeds anderer Personen bestätigen |
+| `/quotes`          | ja   | Zitate und Dialoge                            |
+| `/profile`         | ja   | Username + Avatar pflegen                     |
+| `/display`         | nein | Vollbild-Kiosk-Ansicht für den Raspberry Pi   |
 
 ## Datenmodell (Kurz)
 

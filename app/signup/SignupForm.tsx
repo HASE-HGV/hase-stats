@@ -3,9 +3,15 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import {
+  Field,
+  FieldDescription,
+  FieldLabel,
+} from "@/components/ui/field";
+import { FormError, SubmitButton } from "@/components/form-parts";
+import { MailCheckIcon } from "lucide-react";
 
 export default function SignupForm() {
   const router = useRouter();
@@ -29,12 +35,16 @@ export default function SignupForm() {
     });
     setLoading(false);
     if (error) {
-      setErr(error.message);
+      setErr(
+        error.message === "User already registered"
+          ? "Für diese Email existiert schon ein Account."
+          : error.message
+      );
       return;
     }
     if (!data.session) {
       setInfo(
-        "Registrierung erfolgreich. Bitte prüfe deine Email, um zu bestätigen."
+        "Fast geschafft. Bitte bestätige deine Email über den Link, den wir dir geschickt haben."
       );
       return;
     }
@@ -42,10 +52,21 @@ export default function SignupForm() {
     router.refresh();
   }
 
+  if (info) {
+    return (
+      <Alert className="bg-success/10 text-success border-success/25">
+        <MailCheckIcon aria-hidden />
+        <AlertDescription className="text-pretty">
+          {info}
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
   return (
-    <form onSubmit={onSubmit} className="grid gap-4">
-      <div className="grid gap-1.5">
-        <Label htmlFor="username">Nutzername</Label>
+    <form onSubmit={onSubmit} className="grid gap-5">
+      <Field>
+        <FieldLabel htmlFor="username">Nutzername</FieldLabel>
         <Input
           id="username"
           type="text"
@@ -56,10 +77,14 @@ export default function SignupForm() {
           title="Buchstaben, Zahlen, _ und -"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
+          autoComplete="username"
+          autoFocus
         />
-      </div>
-      <div className="grid gap-1.5">
-        <Label htmlFor="email">Email</Label>
+        <FieldDescription>So erscheinst du auf der Wall.</FieldDescription>
+      </Field>
+
+      <Field>
+        <FieldLabel htmlFor="email">Email</FieldLabel>
         <Input
           id="email"
           type="email"
@@ -68,9 +93,10 @@ export default function SignupForm() {
           onChange={(e) => setEmail(e.target.value)}
           autoComplete="email"
         />
-      </div>
-      <div className="grid gap-1.5">
-        <Label htmlFor="password">Passwort (min. 8 Zeichen)</Label>
+      </Field>
+
+      <Field>
+        <FieldLabel htmlFor="password">Passwort</FieldLabel>
         <Input
           id="password"
           type="password"
@@ -80,12 +106,14 @@ export default function SignupForm() {
           onChange={(e) => setPassword(e.target.value)}
           autoComplete="new-password"
         />
-      </div>
-      <Button type="submit" size="lg" disabled={loading}>
-        {loading ? "Einen Moment…" : "Registrieren"}
-      </Button>
-      {err ? <p className="text-sm text-destructive">{err}</p> : null}
-      {info ? <p className="text-sm text-muted-foreground">{info}</p> : null}
+        <FieldDescription>Mindestens 8 Zeichen.</FieldDescription>
+      </Field>
+
+      <FormError message={err} />
+
+      <SubmitButton loading={loading} loadingLabel="Einen Moment…">
+        Registrieren
+      </SubmitButton>
     </form>
   );
 }
