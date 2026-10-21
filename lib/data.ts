@@ -32,6 +32,11 @@ import type {
  * Nach einer Aktion (Check-in, Wall-Eintrag, Zitat, Profil speichern) wird
  * der betroffene Bereich über `/api/refresh` gezielt geleert, damit sofort
  * frische Daten kommen.
+ *
+ * Ein Restrisiko bleibt: Läuft gerade ein Lesevorgang, der vor der
+ * Invalidierung gestartet wurde, kann er den Cache danach noch mit dem
+ * alten Stand füllen. Die Anzeige stimmt dann erst beim nächsten Aufruf
+ * wieder — die kurzen Laufzeiten begrenzen das auf wenige Sekunden.
  */
 
 /** Tags, über die gezielt invalidiert werden kann. */
