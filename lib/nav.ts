@@ -1,4 +1,5 @@
 import {
+  ChartColumnIcon,
   ClipboardCheckIcon,
   ListChecksIcon,
   MessageSquareQuoteIcon,
@@ -24,6 +25,13 @@ export const navItems: NavItem[] = [
     shortLabel: "Schande",
     icon: ShieldAlertIcon,
     description: "Wer gerade auf der Wall of Shame steht.",
+  },
+  {
+    href: "/stats",
+    label: "Stats",
+    shortLabel: "Stats",
+    icon: ChartColumnIcon,
+    description: "Wer wie lange im Hase-Raum war.",
   },
   {
     href: "/good-deeds",
@@ -64,8 +72,7 @@ export const navItems: NavItem[] = [
 
 /** Die fünf wichtigsten Routen für die mobile Tab-Leiste. */
 export const mobileNavItems: NavItem[] = navItems.filter((i) =>
-  ["/wall", "/deeds", "/confirm", "/quotes", "/profile"].includes(i.href),
+  ["/wall", "/stats", "/deeds", "/quotes", "/profile"].includes(i.href),
 );
 
-export const appName = "HASE";
-export const appTagline = "Wall of Shame";
+export const appName = "HASE Stats";

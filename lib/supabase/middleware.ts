@@ -55,9 +55,14 @@ export async function updateSession(request: NextRequest) {
     pathname === "/favicon.ico";
 
   if (!user && !isPublic) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    return NextResponse.redirect(url);
+    const loginUrl = request.nextUrl.clone();
+    loginUrl.pathname = "/login";
+    // Der QR-Check-in muss nach dem Login wieder erreicht werden, sonst
+    // gaenge die eingeloggte Person verloren.
+    if (pathname.startsWith("/stats/checkin")) {
+      loginUrl.searchParams.set("next", pathname);
+    }
+    return NextResponse.redirect(loginUrl);
   }
 
   return supabaseResponse;

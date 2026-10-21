@@ -16,23 +16,13 @@ import {
 } from "@/components/ui/sidebar";
 import UserAvatar from "@/components/user-avatar";
 import LogoutButton from "@/components/LogoutButton";
-import { appName, appTagline, navItems } from "@/lib/nav";
-import { cn } from "@/lib/utils";
+import { appName, navItems } from "@/lib/nav";
 
 export function isActivePath(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function BrandMark({
-  compact = false,
-  onSidebar = false,
-}: {
-  compact?: boolean;
-  onSidebar?: boolean;
-}) {
-  const sub = onSidebar
-    ? "text-sidebar-foreground/60"
-    : "text-muted-foreground";
+export function BrandMark({ compact = false }: { compact?: boolean }) {
   return (
     <span className="flex items-center gap-2.5">
       <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-primary text-sm font-bold text-primary-foreground">
@@ -41,7 +31,6 @@ export function BrandMark({
       {!compact ? (
         <span className="flex flex-col leading-tight">
           <span className="text-sm font-semibold">{appName}</span>
-          <span className={cn("text-xs", sub)}>{appTagline}</span>
         </span>
       ) : null}
     </span>
@@ -107,14 +96,14 @@ export default function AppSidebar({
   return (
     <Sidebar
       collapsible="none"
-      className="sticky top-0 hidden h-svh border-r border-sidebar-border md:flex"
+      className="sticky top-0 hidden h-svh border-r border-sidebar-border md:flex print:hidden"
     >
       <SidebarHeader>
         <Link
           href="/wall"
           className="flex items-center rounded-xl px-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
         >
-          <BrandMark onSidebar />
+          <BrandMark />
         </Link>
       </SidebarHeader>
       <SidebarContent>

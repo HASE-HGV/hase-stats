@@ -11,10 +11,11 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    default: "HASE — Wall of Shame",
-    template: "%s · HASE",
+    default: "HASE Stats",
+    template: "%s · HASE Stats",
   },
-  description: "Wall of Shame und Wall of Good Deeds",
+  description:
+    "Wall of Shame, Wall of Good Deeds und Anwesenheits-Stats für den Hase-Raum",
   appleWebApp: { capable: true, statusBarStyle: "black-translucent" },
 };
 
