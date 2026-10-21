@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { FormError, SubmitButton } from "@/components/form-parts";
 
-export default function LoginForm() {
+export default function LoginForm({ next }: { next?: string }) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -31,6 +31,12 @@ export default function LoginForm() {
           ? "Email oder Passwort ist falsch."
           : error.message
       );
+      return;
+    }
+    // Nach einem QR-Scan muss der Check-in erneut aufgerufen werden. Das
+    // geht nur mit einem echten Seitenaufruf, nicht mit `router.push`.
+    if (next) {
+      window.location.assign(next);
       return;
     }
     router.push("/wall");

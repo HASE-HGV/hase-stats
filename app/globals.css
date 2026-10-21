@@ -246,3 +246,26 @@
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
+/* ---------------------------------------------------------------------------
+   Druck
+
+   Das QR-Poster (/stats/qr) soll sauber auf Papier landen: weisse Flaeche,
+   schwarzer Text, keine App-Chrome. Sidebar und Tab-Leiste sind zusaetzlich
+   mit `print:hidden` ausgeblendet.
+--------------------------------------------------------------------------- */
+@media print {
+  html,
+  body,
+  [data-slot="sidebar-inset"],
+  .page {
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  /* Hintergrundfarben des Posters erzwingen (Chrom druckt sie sonst nicht). */
+  .print-sheet {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+}

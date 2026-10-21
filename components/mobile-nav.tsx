@@ -38,7 +38,7 @@ export function MobileAppBar({
 
   return (
     <header
-      className="sticky top-0 z-30 flex items-center gap-2 border-b border-border bg-background/85 px-3 backdrop-blur-md backdrop-saturate-150 md:hidden"
+      className="sticky top-0 z-30 flex items-center gap-2 border-b border-border bg-background/85 px-3 backdrop-blur-md backdrop-saturate-150 md:hidden print:hidden"
       style={{
         paddingTop: "var(--sa-top)",
         height: "var(--app-bar-height)",
@@ -90,7 +90,7 @@ function MobileNavSheet({
           <SheetDescription className="sr-only">
             Alle Bereiche der App
           </SheetDescription>
-          <BrandMark onSidebar />
+          <BrandMark />
         </SheetHeader>
         <div className="no-scrollbar flex min-h-0 flex-1 flex-col overflow-y-auto px-2 pb-4">
           <SidebarMenu>
@@ -183,7 +183,7 @@ export default function MobileTabBar() {
   return (
     <nav
       aria-label="Hauptnavigation"
-      className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/90 backdrop-blur-md backdrop-saturate-150 md:hidden"
+      className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/90 backdrop-blur-md backdrop-saturate-150 md:hidden print:hidden"
       style={{ paddingBottom: "var(--sa-bottom)" }}
     >
       <SidebarMenu className="mx-auto flex h-16 max-w-lg items-stretch justify-around gap-0.5 px-1">

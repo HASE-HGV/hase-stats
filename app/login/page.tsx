@@ -5,7 +5,13 @@ import LoginForm from "./LoginForm";
 
 export const metadata: Metadata = { title: "Anmelden" };
 
-export default function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string }>;
+}) {
+  const { next } = await searchParams;
+
   return (
     <AuthShell
       title="Anmelden"
@@ -21,7 +27,7 @@ export default function LoginPage() {
         </>
       }
     >
-      <LoginForm />
+      <LoginForm next={next} />
     </AuthShell>
   );
 }
