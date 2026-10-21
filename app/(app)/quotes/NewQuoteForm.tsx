@@ -55,6 +55,14 @@ export default function NewQuoteForm({
     setLines([emptyLine()]);
     setSaidOn(undefined);
     toast.success("Zitat hinzugefügt");
+
+    // Der Server-Cache kennt das neue Zitat noch nicht — kurz leeren.
+    await fetch("/api/refresh", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ scope: "quotes" }),
+    }).catch(() => {});
+
     router.refresh();
   }
 

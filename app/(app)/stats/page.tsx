@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { getAuthUser } from "@/lib/supabase/auth";
+import { getLeaderboard, getPresence } from "@/lib/data";
 import {
   parsePresenceRange,
   presenceRanges,
-  type LeaderboardRow,
-  type PresenceRow,
 } from "@/lib/presence";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -40,20 +40,14 @@ export default async function StatsPage({
   const range = parsePresenceRange(params.range);
 
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser(supabase);
 
-  const [{ data: leaderboard }, { data: presence }] = await Promise.all([
-    supabase.rpc("room_visit_leaderboard", { p_range: range }),
-    supabase
-      .from("room_presence")
-      .select("*")
-      .order("started_at", { ascending: true }),
+  // Beide Abfragen sind global (gleiche Daten für alle) und deshalb
+  // serverseitig gecacht — der Seitenwechsel bleibt dadurch schnell.
+  const [rows, inRoom] = await Promise.all([
+    getLeaderboard(range),
+    getPresence(),
   ]);
-
-  const rows = (leaderboard ?? []) as LeaderboardRow[];
-  const inRoom = (presence ?? []) as PresenceRow[];
 
   const mine = inRoom.find((r) => r.user_id === user!.id) ?? null;
   const myTotal = Number(
@@ -71,7 +65,7 @@ export default async function StatsPage({
           <Button
             variant="outline"
             nativeButton={false}
-            render={<Link href="/stats/qr" />}
+            render={<Link href="/stats/qr" prefetch={false} />}
           >
             <QrCodeIcon />
             QR-Code drucken

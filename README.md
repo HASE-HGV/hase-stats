@@ -29,6 +29,41 @@ Raspberry Pi im Büro.
 - Supabase (Postgres + Auth + Storage)
 - Vercel für Hosting
 
+## Performance
+
+Die App ist auf schnelle Seitenwechsel ausgelegt — bei Supabase im kostenlosen
+Tier kostet jede Anfrage 200–400 ms, ohne Gegenmaßnahmen wird jeder Klick
+langsam.
+
+- **Kein Prefetch-Flutwerk**: Interne Links holen keine Seiten vor. Stattdessen
+  wird erst beim Darüberfahren/Fokussieren der Route ein Prefetch ausgelöst
+  (`components/app-sidebar.tsx`, `components/mobile-nav.tsx`).
+- **Auth lokal geprüft**: Das Access-Token wird per ES256-Signaturprüfung
+  gegen die öffentlichen JWKS-Keys validiert (`lib/supabase/auth.ts`) — pro
+  Seitenwechsel kein Weg zum Auth-Server. Der Middleware-Pfad kostet damit
+  keinen zusätzlichen Roundtrip.
+- **Server-Cache**: Globale Daten (Rangliste, Anwesenheitsliste, Wall, Zitate,
+  Aufgaben, Profil, Personenliste) liegen in `lib/data.ts` im Data Cache
+  (`unstable_cache`) mit kurzen Laufzeiten (3–60 s).
+- **Gezielte Invalidierung**: Nach Aktionen (Check-in, Wall-Eintrag, Zitat,
+  Profil speichern, Admin-Aktionen) wird der betroffene Cache-Bereich über
+  `revalidateTag` geleert, damit sofort frische Daten erscheinen. Für
+  Aktionen, die direkt im Browser laufen, übernimmt das die Route
+  `POST /api/refresh` mit `scope` (`stats`, `profile`, `wall`, `quotes`,
+  `deeds`, `templates`).
+
+Für den Cache wird der Service-Role-Key benötigt (`SUPABASE_SERVICE_ROLE_KEY`).
+Fehlt er, liest die App ohne Cache weiter — langsamer, aber funktionsfähig.
+
+Gemessen (lokaler Prod-Build, Median aus 5 Läufen, vorher → nachher):
+
+| Aktion                    | vorher    | nachher   |
+|---------------------------|-----------|-----------|
+| Seite laden (`/wall`)     | 787 ms    | 43 ms     |
+| Seite laden (`/stats`)    | 1.393 ms  | 46 ms     |
+| Tab wechseln              | 644–1.610 ms | 75–96 ms  |
+| Bereich wechseln (30 Tage / Allzeit) | 733–1.454 ms | 66–82 ms |
+
 ## Setup
 
 ### 1. Supabase Projekt anlegen
@@ -52,7 +87,7 @@ Raspberry Pi im Büro.
 ```bash
 cp .env.local.example .env.local
 # NEXT_PUBLIC_SUPABASE_URL und NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY eintragen
-# (SUPABASE_SERVICE_ROLE_KEY nur nötig, wenn Admin-Routen serverseitig geprüft werden)
+# (SUPABASE_SERVICE_ROLE_KEY wird für die Admin-Routen und den Server-Cache gebraucht)
 # NEXT_PUBLIC_SITE_URL optional: sorgt dafür, dass der gedruckte QR-Code
 # nicht auf localhost zeigt
 
@@ -66,7 +101,8 @@ App läuft dann auf <http://localhost:3000>.
 
 1. Repo auf GitHub pushen
 2. In Vercel importieren
-3. Env-Variablen setzen: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+3. Env-Variablen setzen: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`,
+   `SUPABASE_SERVICE_ROLE_KEY` (für Admin-Routen und Server-Cache)
 4. Deploy
 
 ### 4. Raspberry Pi Kiosk

@@ -62,6 +62,15 @@ export default function NewShameForm({
     }
     setTargetId("");
     setReason("");
+
+    // Der Server-Cache kennt den neuen Eintrag noch nicht — kurz leeren,
+    // damit er sofort auftaucht.
+    await fetch("/api/refresh", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ scope: "wall" }),
+    }).catch(() => {});
+
     router.refresh();
   }
 

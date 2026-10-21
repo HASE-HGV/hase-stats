@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
-import type { Profile, QuoteRow } from "@/lib/types";
+import { getAuthUser } from "@/lib/supabase/auth";
+import { getPeople, getProfile, getQuotes } from "@/lib/data";
 import { toDisplayQuote } from "@/lib/quotes";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -21,28 +22,17 @@ export const dynamic = "force-dynamic";
 
 export default async function QuotesPage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser(supabase);
 
-  const [{ data: quotes }, { data: people }, { data: me }] = await Promise.all([
-    supabase
-      .from("quotes_view")
-      .select("*")
-      .order("created_at", { ascending: false }),
-    supabase
-      .from("profiles")
-      .select("id, username, avatar_url, created_at, is_admin"),
-    supabase
-      .from("profiles")
-      .select("is_admin")
-      .eq("id", user!.id)
-      .single(),
+  // Alle drei Daten sind global (gleiche Daten für alle) und deshalb
+  // serverseitig gecacht.
+  const [rows, profiles, profile] = await Promise.all([
+    getQuotes(),
+    getPeople(),
+    getProfile(user!.id),
   ]);
 
-  const isAdmin = me?.is_admin === true;
-  const rows = (quotes ?? []) as QuoteRow[];
-  const profiles = (people ?? []) as Profile[];
+  const isAdmin = profile?.is_admin === true;
   const profileMap = new Map(
     profiles.map((p) => [p.id, { username: p.username, avatar_url: p.avatar_url }])
   );

@@ -1,4 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
+import { getAuthUser } from "@/lib/supabase/auth";
+import { getProfile } from "@/lib/data";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import PageHeader from "@/components/page-header";
@@ -8,15 +10,9 @@ export const dynamic = "force-dynamic";
 
 export default async function ProfilePage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser(supabase);
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("id, username, avatar_url, is_admin, created_at")
-    .eq("id", user!.id)
-    .single();
+  const profile = await getProfile(user!.id);
 
   const isAdmin = profile?.is_admin === true;
 

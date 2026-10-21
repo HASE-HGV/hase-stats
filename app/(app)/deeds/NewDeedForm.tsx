@@ -104,6 +104,14 @@ export default function NewDeedForm({
     toast.success("Eingereicht", {
       description: "Zwei Personen müssen deinen Good Deed noch bestätigen.",
     });
+
+    // Der Server-Cache kennt den neuen Deed noch nicht — kurz leeren.
+    await fetch("/api/refresh", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ scope: "deeds" }),
+    }).catch(() => {});
+
     router.refresh();
   }
 
@@ -134,7 +142,11 @@ export default function NewDeedForm({
         </Select>
         <FieldDescription>
           Fehlt eine Aufgabe? Auf der{" "}
-          <Link href="/good-deeds" className="text-primary underline underline-offset-4">
+          <Link
+            href="/good-deeds"
+            prefetch={false}
+            className="text-primary underline underline-offset-4"
+          >
             Wall of Good Deeds
           </Link>{" "}
           anlegen. Aufgaben, die gerade auf Bestätigung warten, sind hier

@@ -32,6 +32,8 @@ export type GoodDeedTemplate = {
   title: string;
   description: string | null;
   active: boolean;
+  /** Wer die Aufgabe angelegt hat (optional). */
+  created_by?: string | null;
 };
 
 export type GoodDeedStatus = "pending" | "approved" | "rejected";

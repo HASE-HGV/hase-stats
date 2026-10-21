@@ -33,6 +33,15 @@ export default function ConfirmButton({
     toast.success("Bestätigt", {
       description: "Eine weitere Bestätigung wird noch gebraucht.",
     });
+
+    // Der Server-Cache kennt die neue Bestätigung noch nicht — kurz
+    // leeren, damit die Liste sofort stimmt.
+    await fetch("/api/refresh", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ scope: "deeds" }),
+    }).catch(() => {});
+
     router.refresh();
   }
 

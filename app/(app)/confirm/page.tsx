@@ -1,4 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
+import { getAuthUser } from "@/lib/supabase/auth";
+import { getPendingDeeds, getProfile, type PendingDeedRow, type ProfileRow } from "@/lib/data";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -20,43 +22,27 @@ import { CheckCircle2Icon, TriangleAlertIcon } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
-type PendingDeed = {
-  id: string;
-  user_id: string;
-  photo_url: string;
-  description: string | null;
-  created_at: string;
-  template: { title: string } | null;
-  author: { username: string; avatar_url: string | null };
-  confirmations: { confirmed_by: string }[];
-};
-
 export default async function ConfirmPage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser(supabase);
 
-  const [{ data: deeds, error }, { data: me }] = await Promise.all([
-    supabase
-      .from("good_deeds")
-      .select(
-        `id, user_id, photo_url, description, created_at,
-         template:template_id(title),
-         author:user_id(username, avatar_url),
-         confirmations:good_deed_confirmations(confirmed_by)`
-      )
-      .eq("status", "pending")
-      .order("created_at", { ascending: true }),
-    supabase
-      .from("profiles")
-      .select("is_admin")
-      .eq("id", user!.id)
-      .single(),
-  ]);
+  // Die wartenden Deeds sind global (jeder sieht dieselbe Liste, filtert
+  // aber selbst) — deshalb gecacht.
+  let rows: PendingDeedRow[] = [];
+  let profile: ProfileRow | null = null;
+  let loadError: string | null = null;
 
-  const isAdmin = me?.is_admin === true;
-  const rows = (deeds ?? []) as unknown as PendingDeed[];
+  try {
+    [rows, profile] = await Promise.all([
+      getPendingDeeds(),
+      getProfile(user!.id),
+    ]);
+  } catch (err) {
+    loadError =
+      err instanceof Error ? err.message : "Deeds konnten nicht geladen werden.";
+  }
+
+  const isAdmin = profile?.is_admin === true;
 
   // Exclude: deeds from me, deeds I already confirmed
   const actionable = rows.filter(
@@ -76,10 +62,10 @@ export default async function ConfirmPage() {
           }
         />
 
-        {error ? (
+        {loadError ? (
           <Alert variant="destructive" className="bg-destructive/10">
             <TriangleAlertIcon aria-hidden />
-            <AlertDescription>{error.message}</AlertDescription>
+            <AlertDescription>{loadError}</AlertDescription>
           </Alert>
         ) : null}
 

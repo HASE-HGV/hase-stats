@@ -68,6 +68,15 @@ export default function ProfileForm({
     setAvatarUrl(newAvatarUrl);
     setFile(null);
     toast.success("Profil gespeichert");
+
+    // Name und Bild werden serverseitig gecacht — Cache kurz leeren,
+    // damit Menü und Wall sofort den neuen Namen zeigen.
+    await fetch("/api/refresh", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ scope: "profile" }),
+    }).catch(() => {});
+
     router.refresh();
   }
 

@@ -1,5 +1,13 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { getAuthUser } from "@/lib/supabase/auth";
+import {
+  getActiveTemplates,
+  getPeople,
+  getProfile,
+  type ProfileRow,
+} from "@/lib/data";
+import type { GoodDeedTemplate, Profile } from "@/lib/types";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Card,
@@ -33,54 +41,37 @@ type TaskRow = {
 
 export default async function WallOfGoodDeedsPage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser(supabase);
 
   // Two separate queries instead of an embedded join — the embedded
   // creator:created_by(username) form depends on PostgREST's schema cache
   // picking up the FK, which can stay stale after migrations.
-  const [{ data: templateRows, error }, { data: me }] = await Promise.all([
-    supabase
-      .from("good_deed_templates")
-      .select("id, title, description, active, created_by")
-      .eq("active", true)
-      .order("title"),
-    supabase
-      .from("profiles")
-      .select("is_admin")
-      .eq("id", user!.id)
-      .single(),
-  ]);
+  let templateRows: GoodDeedTemplate[] = [];
+  let people: Profile[] = [];
+  let profile: ProfileRow | null = null;
+  let loadError: string | null = null;
 
-  const isAdmin = me?.is_admin === true;
+  try {
+    [templateRows, people, profile] = await Promise.all([
+      getActiveTemplates(),
+      getPeople(),
+      getProfile(user!.id),
+    ]);
+  } catch (err) {
+    loadError =
+      err instanceof Error ? err.message : "Aufgaben konnten nicht geladen werden.";
+  }
 
-  const creatorIds = Array.from(
-    new Set(
-      (templateRows ?? [])
-        .map((t) => t.created_by)
-        .filter((id): id is string => Boolean(id))
-    )
-  );
+  const isAdmin = profile?.is_admin === true;
 
-  const { data: creatorRows } =
-    creatorIds.length > 0
-      ? await supabase
-          .from("profiles")
-          .select("id, username")
-          .in("id", creatorIds)
-      : { data: [] as { id: string; username: string }[] };
+  const creatorByid = new Map(people.map((p) => [p.id, p.username]));
 
-  const creatorByid = new Map(
-    (creatorRows ?? []).map((p) => [p.id, p.username])
-  );
-
-  const tasks: TaskRow[] = (templateRows ?? []).map((t) => ({
+  const tasks: TaskRow[] = templateRows.map((t) => ({
     id: t.id,
     title: t.title,
     description: t.description,
     active: t.active,
-    created_by: t.created_by,
+    created_by: t.created_by ?? null,
     creator: t.created_by
       ? { username: creatorByid.get(t.created_by) ?? "?" }
       : null,
@@ -108,10 +99,10 @@ export default async function WallOfGoodDeedsPage() {
           </CardContent>
         </Card>
 
-        {error ? (
+        {loadError ? (
           <Alert variant="destructive" className="bg-destructive/10">
             <TriangleAlertIcon aria-hidden />
-            <AlertDescription>{error.message}</AlertDescription>
+            <AlertDescription>{loadError}</AlertDescription>
           </Alert>
         ) : null}
 
@@ -173,6 +164,7 @@ export default async function WallOfGoodDeedsPage() {
           Einen Good Deed mit Beweis reichst du unter{" "}
           <Link
             href="/deeds"
+            prefetch={false}
             className="text-foreground underline underline-offset-4"
           >
             Good Deed einreichen

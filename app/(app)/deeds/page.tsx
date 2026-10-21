@@ -1,7 +1,12 @@
 import Link from "next/link";
 import { ShieldAlertIcon, SparklesIcon, InboxIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import type { GoodDeedTemplate } from "@/lib/types";
+import { getAuthUser } from "@/lib/supabase/auth";
+import {
+  getActiveTemplates,
+  getPendingTemplateIds,
+  getProfile,
+} from "@/lib/data";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Empty,
@@ -22,23 +27,17 @@ export const dynamic = "force-dynamic";
 
 export default async function DeedsPage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser(supabase);
 
   const [
-    { data: templates },
+    templates,
     { data: myDeeds },
     { count: shameCount },
     { data: openShames },
-    { data: pendingDeeds },
-    { data: me },
+    pendingTemplateIds,
+    profile,
   ] = await Promise.all([
-    supabase
-      .from("good_deed_templates")
-      .select("*")
-      .eq("active", true)
-      .order("title"),
+    getActiveTemplates(),
     supabase
       .from("good_deeds")
       .select(
@@ -57,19 +56,11 @@ export default async function DeedsPage() {
       .select("id, reason, created_at, reporter_username")
       .eq("target_id", user!.id)
       .order("created_at", { ascending: false }),
-    supabase
-      .from("good_deeds")
-      .select("template_id")
-      .eq("status", "pending")
-      .not("template_id", "is", null),
-    supabase
-      .from("profiles")
-      .select("is_admin")
-      .eq("id", user!.id)
-      .single(),
+    getPendingTemplateIds(),
+    getProfile(user!.id),
   ]);
 
-  const isAdmin = me?.is_admin === true;
+  const isAdmin = profile?.is_admin === true;
   const activeShames = shameCount ?? 0;
   const myOpenShames = (openShames ?? []) as {
     id: string;
@@ -80,12 +71,8 @@ export default async function DeedsPage() {
 
   // Templates ausblenden, fuer die schon irgendjemand einen Deed eingereicht
   // hat, der noch nicht durch zwei Bestaetigungen approved wurde.
-  const blockedTemplateIds = new Set(
-    (pendingDeeds ?? [])
-      .map((d) => d.template_id)
-      .filter((id): id is string => Boolean(id))
-  );
-  const availableTemplates = ((templates ?? []) as GoodDeedTemplate[]).filter(
+  const blockedTemplateIds = new Set(pendingTemplateIds);
+  const availableTemplates = templates.filter(
     (t) => !blockedTemplateIds.has(t.id)
   );
 
@@ -191,6 +178,7 @@ export default async function DeedsPage() {
           Offene Einträge werden automatisch entfernt, sobald zwei Personen deinen{" "}
           <Link
             href="/confirm"
+            prefetch={false}
             className="text-foreground underline underline-offset-4"
           >
             Good Deed bestätigt
@@ -198,6 +186,7 @@ export default async function DeedsPage() {
           . Details zu den Regeln stehen auf der{" "}
           <Link
             href="/good-deeds"
+            prefetch={false}
             className="text-foreground underline underline-offset-4"
           >
             Wall of Good Deeds

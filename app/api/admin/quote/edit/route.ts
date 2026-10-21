@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { TAG_QUOTES } from "@/lib/data";
 import type { QuoteLine } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -95,5 +97,8 @@ export async function POST(req: Request) {
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+  // Gecachte Ansicht aktualisieren (Wand/Zitate).
+  revalidateTag(TAG_QUOTES);
+
   return NextResponse.json({ ok: true });
 }

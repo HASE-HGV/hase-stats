@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { Toaster } from "@/components/ui/sonner";
 import { createClient } from "@/lib/supabase/server";
+import { getAuthUser } from "@/lib/supabase/auth";
+import { getProfile } from "@/lib/data";
 import AppSidebar from "@/components/app-sidebar";
 import { MobileAppBar } from "@/components/mobile-nav";
 
@@ -11,17 +13,13 @@ export default async function AppLayout({
   children: React.ReactNode;
 }) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser(supabase);
 
   if (!user) redirect("/login");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("username, avatar_url")
-    .eq("id", user.id)
-    .single();
+  // Gecacht: läuft bei jedem Seitenwechsel und muss deshalb nicht jedes Mal
+  // eine Runde zur Datenbank brauchen.
+  const profile = await getProfile(user.id);
 
   const username = profile?.username ?? "?";
   const avatarUrl = profile?.avatar_url ?? null;

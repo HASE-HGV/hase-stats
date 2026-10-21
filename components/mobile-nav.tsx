@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { MenuIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -132,6 +132,7 @@ function MobileNavLink({
   onNavigate?: () => void;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const active = isActivePath(pathname, item.href);
 
   return (
@@ -139,7 +140,16 @@ function MobileNavLink({
       <SidebarMenuButton
         isActive={active}
         className="min-h-11"
-        render={<Link href={item.href} onClick={onNavigate} />}
+        render={
+          <Link
+            href={item.href}
+            onClick={onNavigate}
+            // Kein automatisches Prefetch (siehe app-sidebar.tsx).
+            prefetch={false}
+            onMouseEnter={() => router.prefetch(item.href)}
+            onFocus={() => router.prefetch(item.href)}
+          />
+        }
       >
         <item.icon
           aria-hidden

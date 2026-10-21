@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import type { Profile, ShameWallRow } from "@/lib/types";
+import { getAuthUser } from "@/lib/supabase/auth";
+import { getPeople, getProfile, getShameWall } from "@/lib/data";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -27,28 +28,17 @@ export const dynamic = "force-dynamic";
 
 export default async function WallPage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser(supabase);
 
-  const [{ data: wall }, { data: people }, { data: me }] = await Promise.all([
-    supabase
-      .from("shame_wall")
-      .select("*")
-      .order("created_at", { ascending: false }),
-    supabase
-      .from("profiles")
-      .select("id, username, avatar_url, created_at, is_admin"),
-    supabase
-      .from("profiles")
-      .select("is_admin")
-      .eq("id", user!.id)
-      .single(),
+  // Alle drei Daten sind global (gleiche Daten für alle) und deshalb
+  // serverseitig gecacht.
+  const [entries, profiles, profile] = await Promise.all([
+    getShameWall(),
+    getPeople(),
+    getProfile(user!.id),
   ]);
 
-  const isAdmin = me?.is_admin === true;
-  const entries = (wall ?? []) as ShameWallRow[];
-  const profiles = (people ?? []) as Profile[];
+  const isAdmin = profile?.is_admin === true;
   // Self kommt zuerst, damit "sich selbst beichten" leicht auffindbar ist.
   const sorted = [
     ...profiles.filter((p) => p.id === user!.id),
@@ -139,6 +129,7 @@ export default async function WallPage() {
           Die Kiosk-Ansicht unter{" "}
           <Link
             href="/display"
+            prefetch={false}
             className="text-foreground underline underline-offset-4"
           >
             /display

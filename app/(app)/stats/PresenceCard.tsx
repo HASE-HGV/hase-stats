@@ -107,6 +107,15 @@ export default function PresenceCard({
         ? "Die Zeit im Hase-Raum läuft."
         : "Deine Anwesenheitszeit wurde gestoppt.",
     });
+
+    // Der Server-Cache kennt den neuen Stand noch nicht — kurz leeren,
+    // damit Rangliste und Anwesenheitsliste sofort stimmen.
+    await fetch("/api/refresh", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ scope: "stats" }),
+    }).catch(() => {});
+
     router.refresh();
   }
 

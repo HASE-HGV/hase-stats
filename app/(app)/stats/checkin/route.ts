@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { getAuthUser } from "@/lib/supabase/auth";
+import { TAG_LEADERBOARD, TAG_PRESENCE } from "@/lib/data";
 import type { ToggleResult } from "@/lib/presence";
 
 export const dynamic = "force-dynamic";
@@ -18,10 +21,7 @@ export const dynamic = "force-dynamic";
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser(supabase);
 
   if (!user) {
     const login = new URL("/login", url.origin);
@@ -36,6 +36,10 @@ export async function GET(request: Request) {
       status: 303,
     });
   }
+
+  // Gecachte Rangliste und Anwesenheitsliste sofort aktualisieren.
+  revalidateTag(TAG_PRESENCE);
+  revalidateTag(TAG_LEADERBOARD);
 
   const open = Boolean((data as ToggleResult | null)?.open);
   const target = new URL(

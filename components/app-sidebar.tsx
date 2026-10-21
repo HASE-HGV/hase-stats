@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   Sidebar,
   SidebarContent,
@@ -39,6 +39,7 @@ export function BrandMark({ compact = false }: { compact?: boolean }) {
 
 export function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
+  const router = useRouter();
 
   return (
     <SidebarMenu>
@@ -46,7 +47,18 @@ export function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
         <SidebarMenuItem key={item.href}>
           <SidebarMenuButton
             isActive={isActivePath(pathname, item.href)}
-            render={<Link href={item.href} onClick={onNavigate} />}
+            render={
+              <Link
+                href={item.href}
+                onClick={onNavigate}
+                // Kein automatisches Prefetch: das wuerde bei jedem
+                // Seitenaufruf alle Routen serverseitig rendern. Stattdessen
+                // wird erst bei Absicht (Hover/Fokus) geladen.
+                prefetch={false}
+                onMouseEnter={() => router.prefetch(item.href)}
+                onFocus={() => router.prefetch(item.href)}
+              />
+            }
           >
             <item.icon aria-hidden />
             <span>{item.label}</span>
@@ -101,6 +113,7 @@ export default function AppSidebar({
       <SidebarHeader>
         <Link
           href="/wall"
+          prefetch={false}
           className="flex items-center rounded-xl px-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
         >
           <BrandMark />

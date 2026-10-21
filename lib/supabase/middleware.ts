@@ -1,5 +1,6 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { getAuthUserId } from "@/lib/supabase/auth";
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -40,9 +41,10 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // User-ID lokal aus dem Token ableiten (kein Weg zum Auth-Server).
+  // Laeuft die Middleware bei jedem Request, deshalb zaehlt hier jeder
+  // Roundtrip doppelt.
+  const userId = await getAuthUserId(supabase);
 
   const { pathname } = request.nextUrl;
 
@@ -54,7 +56,7 @@ export async function updateSession(request: NextRequest) {
     pathname.startsWith("/auth") ||
     pathname === "/favicon.ico";
 
-  if (!user && !isPublic) {
+  if (!userId && !isPublic) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = "/login";
     // Der QR-Check-in muss nach dem Login wieder erreicht werden, sonst
