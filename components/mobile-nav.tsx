@@ -17,14 +17,14 @@ import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui
 import UserAvatar from "@/components/user-avatar";
 import LogoutButton from "@/components/LogoutButton";
 import { BrandMark, isActivePath } from "./app-sidebar";
-import { appName, mobileNavItems, navItems } from "@/lib/nav";
+import { appName, navItems } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 
 /**
  * Kompakte Kopfzeile für Mobile: Brand, aktueller Bereich, Menü-Button.
  *
- * Die Tab-Leiste unten zeigt nur fünf Ziele; "Wall of Good Deeds" ist damit
- * auf Mobile nur über dieses Menü erreichbar.
+ * Die Navigation läuft komplett über das Menü in der Kopfzeile – eine fixe
+ * Leiste am unteren Rand gibt es nicht mehr.
  */
 export function MobileAppBar({
   username,
@@ -98,7 +98,6 @@ function MobileNavSheet({
               <MobileNavLink
                 key={item.href}
                 item={item}
-                showLabel={false}
                 onNavigate={close}
               />
             ))}
@@ -126,12 +125,10 @@ function MobileNavSheet({
 function MobileNavLink({
   item,
   className,
-  showLabel = true,
   onNavigate,
 }: {
   item: (typeof navItems)[number];
   className?: string;
-  showLabel?: boolean;
   onNavigate?: () => void;
 }) {
   const pathname = usePathname();
@@ -141,64 +138,15 @@ function MobileNavLink({
     <SidebarMenuItem className={className}>
       <SidebarMenuButton
         isActive={active}
-        className={cn(
-          "min-h-11",
-          showLabel ? "flex-col gap-1 px-1 py-1.5" : "h-11"
-        )}
+        className="min-h-11"
         render={<Link href={item.href} onClick={onNavigate} />}
       >
         <item.icon
           aria-hidden
-          className={cn(
-            showLabel && "size-5",
-            active ? "text-primary" : undefined
-          )}
+          className={cn("size-5", active ? "text-primary" : undefined)}
         />
-        {showLabel ? (
-          <span
-            className={cn(
-              "w-full truncate text-center text-[10px] leading-tight font-medium",
-              active ? "text-primary" : "text-muted-foreground"
-            )}
-          >
-            {item.shortLabel}
-          </span>
-        ) : (
-          <span>{item.label}</span>
-        )}
+        <span>{item.label}</span>
       </SidebarMenuButton>
     </SidebarMenuItem>
-  );
-}
-
-/**
- * Feste Tab-Leiste am unteren Rand für Mobile.
- *
- * `env(safe-area-inset-bottom)` wird über die Höhe der Leiste verrechnet, damit
- * auf Geräten mit Home-Indicator nichts verdeckt wird.
- */
-export default function MobileTabBar() {
-  const pathname = usePathname();
-
-  return (
-    <nav
-      aria-label="Hauptnavigation"
-      className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/90 backdrop-blur-md backdrop-saturate-150 md:hidden print:hidden"
-      style={{ paddingBottom: "var(--sa-bottom)" }}
-    >
-      <SidebarMenu className="mx-auto flex h-16 max-w-lg items-stretch justify-around gap-0.5 px-1">
-        {mobileNavItems.map((item) => (
-          <MobileNavLink
-            key={item.href}
-            item={item}
-            className="flex-1"
-          />
-        ))}
-      </SidebarMenu>
-      {/* Für Screenreader: die aktuelle Position. */}
-      <span className="sr-only" aria-live="polite">
-        {navItems.find((i) => isActivePath(pathname, i.href))?.label}
-      </span>
-    </nav>
   );
 }

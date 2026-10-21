@@ -3,7 +3,7 @@ import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { Toaster } from "@/components/ui/sonner";
 import { createClient } from "@/lib/supabase/server";
 import AppSidebar from "@/components/app-sidebar";
-import MobileTabBar, { MobileAppBar } from "@/components/mobile-nav";
+import { MobileAppBar } from "@/components/mobile-nav";
 
 export default async function AppLayout({
   children,
@@ -30,15 +30,13 @@ export default async function AppLayout({
     <SidebarProvider>
       <AppSidebar username={username} avatarUrl={avatarUrl} />
       <SidebarInset className="min-w-0">
-        {/* Auf Mobile führt die Kopfzeile den vollständigen Menüpunkt-Zugang,
-            die Tab-Leiste unten nur die fünf häufigsten Bereiche. */}
+        {/* Auf Mobile führt die Kopfzeile den vollständigen Menüpunkt-Zugang. */}
         <MobileAppBar
           username={username}
           avatarUrl={avatarUrl}
         />
         {children}
       </SidebarInset>
-      <MobileTabBar />
       <Toaster />
     </SidebarProvider>
   );

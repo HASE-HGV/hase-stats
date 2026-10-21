@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { ClockIcon, LogInIcon, LogOutIcon } from "lucide-react";
@@ -12,15 +12,28 @@ import { Spinner } from "@/components/ui/spinner";
 import { useNow } from "@/hooks/use-now";
 import { formatClock, formatDuration, type ToggleResult } from "@/lib/presence";
 
+/** Anzeigezustand der Karte. */
+type PresenceView = {
+  /** Startzeit der offenen Session, `null` = ausgecheckt. */
+  startedAt: string | null;
+  /** Summe der Anwesenheitszeit im gewählten Zeitraum. */
+  total: number;
+};
+
 /**
  * Eigene Anwesenheit: Status, Live-Uhr und Check-in-/Check-out-Knopf.
  *
  * Der Knopf ruft die Datenbank-Funktion `toggle_room_visit()` auf. Die
  * Funktion ist `security definer` und arbeitet mit `auth.uid()`, damit die
  * Zeit serverseitig festgehalten wird und nicht manipuliert werden kann.
+ *
+ * Die Anzeige wird optimistisch aktualisiert: die Antwort der Datenbank
+ * übernimmt sofort den lokalen Zustand, sodass Status, Uhr und Summe ohne
+ * Reload stimmen. `router.refresh()` holt danach die übrigen Serverdaten
+ * (Rangliste, Anwesenheitsliste) nach.
  */
 export default function PresenceCard({
-  startedAt,
+  startedAt: initialStartedAt,
   totalSeconds,
   rangeLabel,
 }: {
@@ -32,6 +45,36 @@ export default function PresenceCard({
   const now = useNow();
   const [loading, setLoading] = useState(false);
 
+  // Lokaler Zustand, damit die Karte ohne Server-Roundtrip sofort reagiert.
+  const [view, setView] = useState<PresenceView>({
+    startedAt: initialStartedAt,
+    total: totalSeconds,
+  });
+
+  // Optimistischer Stand, den der Server noch bestätigen muss.
+  const pendingRef = useRef<PresenceView | null>(null);
+
+  // Neuere Serverdaten übernehmen – aber nur, wenn sie den optimistischen
+  // Stand bestätigen. Sonst würde eine veraltete Antwort (z. B. von einem
+  // Refresh vor dem letzten Klick) die Anzeige wieder zurückdrehen.
+  useEffect(() => {
+    const incoming: PresenceView = {
+      startedAt: initialStartedAt,
+      total: totalSeconds,
+    };
+    const pending = pendingRef.current;
+
+    if (pending) {
+      const serverOpen = Boolean(incoming.startedAt);
+      const pendingOpen = Boolean(pending.startedAt);
+      if (serverOpen !== pendingOpen) return; // Server noch nicht auf dem Stand
+      pendingRef.current = null;
+    }
+
+    setView(incoming);
+  }, [initialStartedAt, totalSeconds]);
+
+  const startedAt = view.startedAt;
   const checkedIn = Boolean(startedAt);
   const elapsed = startedAt
     ? Math.max(0, Math.floor((now - new Date(startedAt).getTime()) / 1000))
@@ -48,7 +91,17 @@ export default function PresenceCard({
       return;
     }
 
-    const open = Boolean((data as ToggleResult | null)?.open);
+    const result = data as ToggleResult | null;
+    const open = Boolean(result?.open);
+
+    // Optimistisch übernehmen: die Karte zeigt den neuen Zustand sofort.
+    const next: PresenceView = {
+      startedAt: open ? (result?.started_at ?? null) : null,
+      total: open ? view.total : view.total + elapsed,
+    };
+    pendingRef.current = next;
+    setView(next);
+
     toast.success(open ? "Du bist jetzt eingecheckt." : "Du bist jetzt ausgecheckt.", {
       description: open
         ? "Die Zeit im Hase-Raum läuft."
@@ -118,7 +171,7 @@ export default function PresenceCard({
           </Button>
 
           <p className="meta">
-            Gesamt ({rangeLabel}): {formatDuration(totalSeconds)}
+            Gesamt ({rangeLabel}): {formatDuration(view.total)}
           </p>
         </div>
       </CardContent>

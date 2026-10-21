@@ -69,9 +69,8 @@
   --sa-bottom: env(safe-area-inset-bottom, 0px);
   --sa-left: env(safe-area-inset-left, 0px);
 
-  /* Height of the fixed mobile tab bar, incl. its safe-area padding.
-     Used to reserve scroll space so the last card is never hidden. */
-  --mobile-nav-height: calc(4.25rem + var(--sa-bottom));
+  /* Bottom safe area on mobile (Home-Indicator). */
+  --safe-bottom: var(--sa-bottom);
 
   /* App bar height on mobile. */
   --app-bar-height: calc(3.5rem + var(--sa-top));
@@ -181,14 +180,13 @@
    * auseinanderliegen, damit sich jede Seite an dieselben Regeln hält,
    * statt jede Seite ihr eigenes mb-* zu wählen.
    *
-   * Der untere Abstand reserviert Platz für die fixe Tab-Leiste auf Mobile
-   * und für den Home-Indicator auf iOS. Ab md+ ist die Leiste ausgeblendet,
-   * dort greift stattdessen md:pb-12.
+   * Der untere Abstand reserviert Platz für den Home-Indicator auf iOS.
+   * Ab md+ gilt stattdessen md:pb-12.
    */
   .page,
   .page-wide {
     @apply mx-auto flex w-full flex-col gap-6 pt-6;
-    @apply pb-[calc(var(--mobile-nav-height)+1.5rem)] md:pt-8 md:pb-12;
+    @apply pb-[calc(var(--safe-bottom)+1.5rem)] md:pt-8 md:pb-12;
     padding-left: max(1rem, var(--sa-left));
     padding-right: max(1rem, var(--sa-right));
   }
@@ -251,7 +249,7 @@
    Druck
 
    Das QR-Poster (/stats/qr) soll sauber auf Papier landen: weisse Flaeche,
-   schwarzer Text, keine App-Chrome. Sidebar und Tab-Leiste sind zusaetzlich
+   schwarzer Text, keine App-Chrome. Sidebar und Kopfzeile sind zusaetzlich
    mit `print:hidden` ausgeblendet.
 --------------------------------------------------------------------------- */
 @media print {
