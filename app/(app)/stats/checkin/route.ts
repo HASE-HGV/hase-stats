@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { revalidateTag } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getAuthUser } from "@/lib/supabase/auth";
-import { TAG_LEADERBOARD, TAG_PRESENCE } from "@/lib/data";
+import { TAG_ACTIVITY, TAG_LEADERBOARD, TAG_PRESENCE } from "@/lib/data";
 import type { ToggleResult } from "@/lib/presence";
 
 export const dynamic = "force-dynamic";
@@ -37,9 +37,10 @@ export async function GET(request: Request) {
     });
   }
 
-  // Gecachte Rangliste und Anwesenheitsliste sofort aktualisieren.
+  // Gecachte Rangliste, Anwesenheitsliste und Aktivitäts-Graph sofort aktualisieren.
   revalidateTag(TAG_PRESENCE);
   revalidateTag(TAG_LEADERBOARD);
+  revalidateTag(TAG_ACTIVITY);
 
   const open = Boolean((data as ToggleResult | null)?.open);
   const target = new URL(

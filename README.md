@@ -15,6 +15,10 @@ Raspberry Pi im Büro.
 - **Stats-Seite `/stats`**: Check-in/Check-out mit Live-Uhr, Rangliste als
   Balkendiagramm (Zeiträume Heute / 7 Tage / 30 Tage / Allzeit) und Liste der
   Personen, die gerade im Raum sind
+- **Aktivitäts-Graph** auf `/stats`: ein Jahr Anwesenheit als Kachel-Raster
+  im GitHub-Stil (eine Spalte je Woche, vier Grün-Stufen nach Zeit pro Tag)
+- **Auschecken mit Uhrzeit**: wer das Auschecken vergessen hat, trägt die
+  ungefähre Geh-Zeit im Popup nach („Mit Zeit auschecken“)
 - **QR-Code zum Drucken** (`/stats/qr`): hängt an der Tür und schaltet die
   Anwesenheit des gerade eingeloggten Accounts um
 - **Kiosk-Route `/display`** für den Raspberry Pi (read-only, wechselt zwischen
@@ -44,13 +48,19 @@ langsam.
   keinen zusätzlichen Roundtrip.
 - **Server-Cache**: Globale Daten (Rangliste, Anwesenheitsliste, Wall, Zitate,
   Aufgaben, Profil, Personenliste) liegen in `lib/data.ts` im Data Cache
-  (`unstable_cache`) mit kurzen Laufzeiten (3–60 s).
+  (`unstable_cache`) mit kurzen Laufzeiten (3–60 s). Der Aktivitäts-Graph ist
+  je Person gecacht (Nutzer-ID im Cache-Schlüssel).
 - **Gezielte Invalidierung**: Nach Aktionen (Check-in, Wall-Eintrag, Zitat,
   Profil speichern, Admin-Aktionen) wird der betroffene Cache-Bereich über
   `revalidateTag` geleert, damit sofort frische Daten erscheinen. Für
   Aktionen, die direkt im Browser laufen, übernimmt das die Route
   `POST /api/refresh` mit `scope` (`stats`, `profile`, `wall`, `quotes`,
   `deeds`, `templates`).
+- **Graph serverseitig gerendert**: Die 369 Tages-Kacheln stehen als
+  statisches HTML in der Seite (`components/presence-activity.tsx`). Nur der
+  kleine Client-Teil (`components/activity-grid.tsx`) hydriert — Tooltip,
+  Scroll-Position, Event-Delegation. Als Client-Komponente würde der Graph
+  jeden Seitenwechsel um ~45 ms verlängern.
 
 Für den Cache wird der Service-Role-Key benötigt (`SUPABASE_SERVICE_ROLE_KEY`).
 Fehlt er, liest die App ohne Cache weiter — langsamer, aber funktionsfähig.
@@ -132,6 +142,7 @@ Wall of Shame und Rangliste.
 | `/stats`           | ja   | Anwesenheit, Rangliste, „gerade im Raum“       |
 | `/stats/qr`        | ja   | Druckbares QR-Poster für die Tür              |
 | `/stats/checkin`   | ja   | Check-in/Check-out per QR (Route-Handler)     |
+| `/api/presence/checkout` | ja | Auschecken mit eigener Uhrzeit (JSON)      |
 | `/good-deeds`      | ja   | Aufgabenliste pflegen (Eintrag/Aufgabe)       |
 | `/deeds`           | ja   | Good Deeds einreichen (mit Foto)              |
 | `/confirm`         | ja   | Offene Good Deeds anderer Personen bestätigen |
@@ -150,6 +161,17 @@ Wall of Shame und Rangliste.
 - Die Zeit wird ausschließlich serverseitig festgehalten: die DB-Funktion
   `toggle_room_visit()` ist `security definer`, nutzt `auth.uid()` und
   `pg_advisory_xact_lock` — Zeitstempel lassen sich also nicht backdaten.
+- **Ausnahme: „Mit Zeit auschecken“.** Wer das Gehen vergessen hat, wählt im
+  Popup die ungefähre Uhrzeit. Die Route `POST /api/presence/checkout`
+  prüft, dass es die **eigene offene** Session ist und die Zeit zwischen
+  Check-in und jetzt liegt, und setzt dann `ended_at` über den Admin-Client
+  (die Service Role umgeht die RLS, weil `toggle_room_visit()` keine eigene
+  Endzeit annehmen kann). Die Uhrzeit wird also bewusst nachträglich
+  korrigierbar — sie kann nur nach hinten, nicht über „jetzt“ hinaus.
+- Der **Aktivitäts-Graph** auf `/stats` zeigt die eigenen Besuche der letzten
+  53 Wochen: `lib/activity.ts` summiert die Zeit je Kalendertag (Europe/Berlin,
+  inklusive Tagesgrenzen und Sommerzeit — ein Besuch über Mitternacht zählt
+  auf beide Tage). Grüne Stufen: bis 30 min, bis 1 h, bis 2 h, darüber.
 - Pro Person ist immer nur **eine** offene Session erlaubt.
 - Die Rangliste kommt aus `room_visit_leaderboard('all'|'today'|'7d'|'30d')`;
   offene Sessions zählen live bis jetzt. „Heute“ beginnt um 00:00 Ortszeit
@@ -173,7 +195,9 @@ room_visits(id, user_id, started_at, ended_at?)  -- offene Session: ended_at IS 
 - RLS lässt nur das Einfügen als eigener User zu, Lesen ist für alle
   authentifizierten Nutzer erlaubt (und für `anon` auf `profiles` +
   `shame_entries`, damit die Kiosk-Ansicht ohne Login funktioniert).
-- `room_visits` wird nur über `toggle_room_visit()` geschrieben. Gelesen wird
+- `room_visits` wird von Nutzern nur über `toggle_room_visit()` geschrieben;
+  die Route `/api/presence/checkout` korrigiert die Endzeit der eigenen
+  offenen Session (Admin-Client, nach Prüfung der Zugehörigkeit). Gelesen wird
   über die View `room_presence` (nur `authenticated`) und die Funktion
   `room_visit_leaderboard()` (`authenticated` + `anon` für den Kiosk).
 

@@ -11,6 +11,7 @@ import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/componen
 import { Spinner } from "@/components/ui/spinner";
 import { useNow } from "@/hooks/use-now";
 import { formatClock, formatDuration, type ToggleResult } from "@/lib/presence";
+import ManualCheckoutDialog from "./ManualCheckoutDialog";
 
 /** Anzeigezustand der Karte. */
 type PresenceView = {
@@ -26,6 +27,9 @@ type PresenceView = {
  * Der Knopf ruft die Datenbank-Funktion `toggle_room_visit()` auf. Die
  * Funktion ist `security definer` und arbeitet mit `auth.uid()`, damit die
  * Zeit serverseitig festgehalten wird und nicht manipuliert werden kann.
+ *
+ * Wer das Auschecken vergessen hat, nutzt den zweiten Knopf: er öffnet ein
+ * Popup, in dem die ungefähre Uhrzeit des Gehens gewählt wird.
  *
  * Die Anzeige wird optimistisch aktualisiert: die Antwort der Datenbank
  * übernimmt sofort den lokalen Zustand, sodass Status, Uhr und Summe ohne
@@ -119,6 +123,31 @@ export default function PresenceCard({
     router.refresh();
   }
 
+  /**
+   * Auschecken mit nachträglicher Uhrzeit (vergessenes Auschecken).
+   * Die Server-Route hat die Session bereits beendet — hier wird nur der
+   * lokale Zustand nachgezogen.
+   */
+  async function onManualCheckout(endedAt: string) {
+    const duration = Math.max(
+      0,
+      Math.floor(
+        (new Date(endedAt).getTime() - new Date(startedAt!).getTime()) / 1000,
+      ),
+    );
+
+    const next: PresenceView = {
+      startedAt: null,
+      total: view.total + duration,
+    };
+    pendingRef.current = next;
+    setView(next);
+
+    // Der Server-Cache kennt den neuen Stand schon (die Route hat ihn
+    // geleert) — der Refresh holt nur die frischen Serverdaten nach.
+    router.refresh();
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -159,25 +188,34 @@ export default function PresenceCard({
             </p>
           )}
 
-          <Button
-            onClick={onToggle}
-            disabled={loading}
-            variant={checkedIn ? "outline" : "default"}
-            className="w-full sm:w-auto sm:self-start"
-          >
-            {loading ? (
-              <Spinner />
-            ) : checkedIn ? (
-              <LogOutIcon />
-            ) : (
-              <LogInIcon />
-            )}
-            {loading
-              ? "Einen Moment…"
-              : checkedIn
-                ? "Auschecken"
-                : "Einchecken"}
-          </Button>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <Button
+              onClick={onToggle}
+              disabled={loading}
+              variant={checkedIn ? "outline" : "default"}
+              className="w-full sm:w-auto sm:self-start"
+            >
+              {loading ? (
+                <Spinner />
+              ) : checkedIn ? (
+                <LogOutIcon />
+              ) : (
+                <LogInIcon />
+              )}
+              {loading
+                ? "Einen Moment…"
+                : checkedIn
+                  ? "Auschecken"
+                  : "Einchecken"}
+            </Button>
+
+            {checkedIn ? (
+              <ManualCheckoutDialog
+                startedAt={startedAt!}
+                onCheckedOut={onManualCheckout}
+              />
+            ) : null}
+          </div>
 
           <p className="meta">
             Gesamt ({rangeLabel}): {formatDuration(view.total)}

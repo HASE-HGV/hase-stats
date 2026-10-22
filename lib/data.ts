@@ -2,6 +2,12 @@ import { unstable_cache } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { LeaderboardRow, PresenceRow, PresenceRange } from "@/lib/presence";
+import {
+  ACTIVITY_WEEKS,
+  buildActivitySeries,
+  type ActivityDay,
+  type RoomVisit,
+} from "@/lib/activity";
 import type {
   GoodDeedTemplate,
   Profile,
@@ -48,6 +54,7 @@ export const TAG_WALL = "wall";
 export const TAG_QUOTES = "quotes";
 export const TAG_TEMPLATES = "templates";
 export const TAG_DEEDS = "deeds";
+export const TAG_ACTIVITY = "activity";
 
 const TTL_LEADERBOARD = 10;
 const TTL_PRESENCE = 3;
@@ -57,6 +64,7 @@ const TTL_WALL = 10;
 const TTL_QUOTES = 10;
 const TTL_TEMPLATES = 60;
 const TTL_DEEDS = 10;
+const TTL_ACTIVITY = 60;
 
 /** Zeile der `profiles`, die die App braucht. */
 export type ProfileRow = {
@@ -176,6 +184,59 @@ export async function getPresence(): Promise<PresenceRow[]> {
     return (data ?? []) as PresenceRow[];
   }
   return cachedPresence();
+}
+
+/* -------------------------------------------------------------------------- */
+/* Aktivitaets-Graph                                                            */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Liest die Besuche einer Person und summiert sie je Kalendertag
+ * (Europe/Berlin). Die Aggregation passiert in der App, weil die
+ * Tagesgrenzen von der Zeitzone abhaengen.
+ */
+async function fetchActivity(userId: string): Promise<ActivityDay[]> {
+  const supabase = createAdminClient();
+
+  // Start des Fensters als Zeitstempel ohne Millisekunden — der wird im
+  // PostgREST-Filter als Wert benutzt.
+  const since = new Date(
+    Date.now() - ACTIVITY_WEEKS * 7 * 24 * 60 * 60 * 1000
+  )
+    .toISOString()
+    .replace(/\.\d+Z$/, "Z");
+
+  const { data } = await supabase
+    .from("room_visits")
+    .select("started_at, ended_at")
+    .eq("user_id", userId)
+    // Offene Sessions zaehlen live mit, auch wenn sie aelter sind.
+    .or(`started_at.gte.${since},ended_at.is.null`)
+    .order("started_at", { ascending: true });
+
+  return buildActivitySeries((data ?? []) as RoomVisit[]);
+}
+
+const cachedActivity = unstable_cache(fetchActivity, ["activity"], {
+  revalidate: TTL_ACTIVITY,
+  tags: [TAG_ACTIVITY],
+});
+
+/**
+ * Tagesserie fuer den Aktivitaets-Graphen. Gecacht je Person — die
+ * Nutzer-ID ist Teil des Cache-Schluessels.
+ */
+export async function getActivity(userId: string): Promise<ActivityDay[]> {
+  if (!hasAdminKey()) {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from("room_visits")
+      .select("started_at, ended_at")
+      .eq("user_id", userId)
+      .order("started_at", { ascending: true });
+    return buildActivitySeries((data ?? []) as RoomVisit[]);
+  }
+  return cachedActivity(userId);
 }
 
 /* -------------------------------------------------------------------------- */

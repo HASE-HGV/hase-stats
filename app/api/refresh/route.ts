@@ -3,6 +3,7 @@ import { revalidateTag } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getAuthUser } from "@/lib/supabase/auth";
 import {
+  TAG_ACTIVITY,
   TAG_DEEDS,
   TAG_LEADERBOARD,
   TAG_PEOPLE,
@@ -17,7 +18,7 @@ export const dynamic = "force-dynamic";
 
 /** Welche Cache-Bereiche dürfen geleert werden. */
 const SCOPES: Record<string, string[]> = {
-  stats: [TAG_PRESENCE, TAG_LEADERBOARD],
+  stats: [TAG_PRESENCE, TAG_LEADERBOARD, TAG_ACTIVITY],
   profile: [TAG_PROFILE, TAG_PEOPLE],
   wall: [TAG_WALL, TAG_PEOPLE],
   quotes: [TAG_QUOTES, TAG_PEOPLE],

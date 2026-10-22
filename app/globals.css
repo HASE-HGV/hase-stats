@@ -217,6 +217,32 @@
   .meta {
     @apply text-xs text-muted-foreground;
   }
+
+  /*
+   * Aktivitaets-Graph: Die Kacheln blenden Spalte fuer Spalte ein, damit
+   * der Graph "wächst" statt auf einmal da zu sein. Die Verzoegerung steckt
+   * im `animation-delay` der Spalte.
+   */
+  .activity-cell {
+    width: 11px;
+    height: 11px;
+    border-radius: 3px;
+  }
+
+  .activity-column {
+    animation: activity-cell-in 220ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  }
+}
+
+@keyframes activity-cell-in {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

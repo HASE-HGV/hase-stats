@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getAuthUser } from "@/lib/supabase/auth";
-import { getLeaderboard, getPresence } from "@/lib/data";
+import { getActivity, getLeaderboard, getPresence } from "@/lib/data";
 import {
   parsePresenceRange,
   presenceRanges,
@@ -24,7 +24,8 @@ import {
 } from "@/components/ui/empty";
 import PageHeader from "@/components/page-header";
 import LeaderboardChart from "@/components/leaderboard-chart";
-import { ChartNoAxesColumnIcon, QrCodeIcon, UsersIcon } from "lucide-react";
+import PresenceActivity from "@/components/presence-activity";
+import { ChartNoAxesColumnIcon, Grid3x3Icon, QrCodeIcon, UsersIcon } from "lucide-react";
 import PresenceCard from "./PresenceCard";
 import PresenceList from "./PresenceList";
 import RangeFilter from "./RangeFilter";
@@ -42,11 +43,14 @@ export default async function StatsPage({
   const supabase = await createClient();
   const user = await getAuthUser(supabase);
 
-  // Beide Abfragen sind global (gleiche Daten für alle) und deshalb
-  // serverseitig gecacht — der Seitenwechsel bleibt dadurch schnell.
-  const [rows, inRoom] = await Promise.all([
+  // Rangliste und Anwesenheitsliste gelten für alle, der Aktivitäts-Graph
+  // ist personenbezogen — alle drei sind serverseitig gecacht (beim Graph
+  // ist die Nutzer-ID Teil des Cache-Schlüssels), der Seitenwechsel bleibt
+  // dadurch schnell.
+  const [rows, inRoom, activity] = await Promise.all([
     getLeaderboard(range),
     getPresence(),
+    getActivity(user!.id),
   ]);
 
   const mine = inRoom.find((r) => r.user_id === user!.id) ?? null;
@@ -95,6 +99,21 @@ export default async function StatsPage({
         totalSeconds={myTotal}
         rangeLabel={rangeLabel}
       />
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Deine letzten 12 Monate</CardTitle>
+          <CardAction>
+            <Badge variant="secondary" className="gap-1.5">
+              <Grid3x3Icon className="size-3" />
+              Aktivität
+            </Badge>
+          </CardAction>
+        </CardHeader>
+        <CardContent>
+          <PresenceActivity days={activity} />
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
