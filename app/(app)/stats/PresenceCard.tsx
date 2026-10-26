@@ -11,6 +11,7 @@ import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/componen
 import { Spinner } from "@/components/ui/spinner";
 import { useNow } from "@/hooks/use-now";
 import { formatClock, formatDuration, type ToggleResult } from "@/lib/presence";
+import AddVisitDialog from "./AddVisitDialog";
 import ManualCheckoutDialog from "./ManualCheckoutDialog";
 
 /** Anzeigezustand der Karte. */
@@ -148,6 +149,21 @@ export default function PresenceCard({
     router.refresh();
   }
 
+  /**
+   * Vergessene Anwesenheit nachtragen: Die Server-Route hat den Eintrag
+   * angelegt, die Summe wächst um die nachgetragene Zeit.
+   */
+  function onAddVisit(seconds: number) {
+    const next: PresenceView = {
+      startedAt: view.startedAt,
+      total: view.total + seconds,
+    };
+    pendingRef.current = next;
+    setView(next);
+
+    router.refresh();
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -215,6 +231,8 @@ export default function PresenceCard({
                 onCheckedOut={onManualCheckout}
               />
             ) : null}
+
+            <AddVisitDialog onAdded={onAddVisit} />
           </div>
 
           <p className="meta">

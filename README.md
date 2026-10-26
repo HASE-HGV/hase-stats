@@ -19,6 +19,9 @@ Raspberry Pi im Büro.
   im GitHub-Stil (eine Spalte je Woche, vier Grün-Stufen nach Zeit pro Tag)
 - **Auschecken mit Uhrzeit**: wer das Auschecken vergessen hat, trägt die
   ungefähre Geh-Zeit im Popup nach („Mit Zeit auschecken“)
+- **Zeit nachtragen**: eine komplett vergessene Anwesenheit mit Start und
+  Ende eintragen („Zeit nachtragen“) — inklusive Prüfung auf
+  Überschneidungen mit vorhandenen Einträgen
 - **QR-Code zum Drucken** (`/stats/qr`): hängt an der Tür und schaltet die
   Anwesenheit des gerade eingeloggten Accounts um
 - **Kiosk-Route `/display`** für den Raspberry Pi (read-only, wechselt zwischen
@@ -143,6 +146,7 @@ Wall of Shame und Rangliste.
 | `/stats/qr`        | ja   | Druckbares QR-Poster für die Tür              |
 | `/stats/checkin`   | ja   | Check-in/Check-out per QR (Route-Handler)     |
 | `/api/presence/checkout` | ja | Auschecken mit eigener Uhrzeit (JSON)      |
+| `/api/presence/visit`    | ja | Vergessene Anwesenheit nachtragen (JSON)   |
 | `/good-deeds`      | ja   | Aufgabenliste pflegen (Eintrag/Aufgabe)       |
 | `/deeds`           | ja   | Good Deeds einreichen (mit Foto)              |
 | `/confirm`         | ja   | Offene Good Deeds anderer Personen bestätigen |
@@ -168,6 +172,12 @@ Wall of Shame und Rangliste.
   (die Service Role umgeht die RLS, weil `toggle_room_visit()` keine eigene
   Endzeit annehmen kann). Die Uhrzeit wird also bewusst nachträglich
   korrigierbar — sie kann nur nach hinten, nicht über „jetzt“ hinaus.
+- **„Zeit nachtragen“** legt eine ganze vergessene Session an (Start + Ende,
+  auch an anderen Tagen). `POST /api/presence/visit` verlangt: Start vor
+  Ende, Ende nicht in der Zukunft, höchstens 24 Stunden lang und **keine
+  Überschneidung** mit vorhandenen Einträgen (sonst würde die Zeit doppelt
+  zählen). Der Eintrag landet ebenfalls über den Admin-Client in
+  `room_visits` und taucht in Rangliste und Graph auf.
 - Der **Aktivitäts-Graph** auf `/stats` zeigt die eigenen Besuche der letzten
   53 Wochen: `lib/activity.ts` summiert die Zeit je Kalendertag (Europe/Berlin,
   inklusive Tagesgrenzen und Sommerzeit — ein Besuch über Mitternacht zählt
@@ -196,8 +206,9 @@ room_visits(id, user_id, started_at, ended_at?)  -- offene Session: ended_at IS 
   authentifizierten Nutzer erlaubt (und für `anon` auf `profiles` +
   `shame_entries`, damit die Kiosk-Ansicht ohne Login funktioniert).
 - `room_visits` wird von Nutzern nur über `toggle_room_visit()` geschrieben;
-  die Route `/api/presence/checkout` korrigiert die Endzeit der eigenen
-  offenen Session (Admin-Client, nach Prüfung der Zugehörigkeit). Gelesen wird
+  die Routen `/api/presence/checkout` (Endzeit korrigieren) und
+  `/api/presence/visit` (Session nachtragen) schreiben nach Prüfung der
+  Zugehörigkeit über den Admin-Client. Gelesen wird
   über die View `room_presence` (nur `authenticated`) und die Funktion
   `room_visit_leaderboard()` (`authenticated` + `anon` für den Kiosk).
 

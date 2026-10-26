@@ -81,3 +81,25 @@ export function formatAxisTick(hours: number): string {
   const rounded = Math.round(hours * 10) / 10;
   return `${String(rounded).replace(".", ",")} h`;
 }
+
+/**
+ * Wert fuer `<input type="datetime-local">`: "2026-10-26T14:32".
+ * Gerechnet wird in der Zeitzone des Geraets — der Browser uebermittelt
+ * den Wert spaeter als ISO-Zeitstempel, die Server-Route prueft ihn.
+ */
+export function toDateTimeInput(date: Date): string {
+  const pad = (value: number) => String(value).padStart(2, "0");
+  const day = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+  const time = `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  return `${day}T${time}`;
+}
+
+/** Uhrzeit im Kurzformat: "14:32". */
+export function formatClockTime(value: string | number | Date): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleTimeString("de-DE", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}

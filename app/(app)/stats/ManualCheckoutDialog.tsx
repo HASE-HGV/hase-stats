@@ -16,7 +16,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
-import { formatDuration } from "@/lib/presence";
+import {
+  formatClockTime,
+  formatDuration,
+  toDateTimeInput,
+} from "@/lib/presence";
 
 /**
  * Auschecken mit nachtraeglicher Uhrzeit.
@@ -29,24 +33,6 @@ import { formatDuration } from "@/lib/presence";
 
 /** Schnellauswahl in Minuten vor "jetzt". */
 const QUICK_OPTIONS = [0, 15, 30, 60, 120];
-
-/** Datum als "YYYY-MM-DDTHH:mm" fuer `<input type="datetime-local">`. */
-function toInputValue(date: Date): string {
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return [
-    `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`,
-    `${pad(date.getHours())}:${pad(date.getMinutes())}`,
-  ].join("T");
-}
-
-function formatTime(value: string): string {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleTimeString("de-DE", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
 
 export default function ManualCheckoutDialog({
   startedAt,
@@ -65,7 +51,7 @@ export default function ManualCheckoutDialog({
   const [error, setError] = useState<string | null>(null);
 
   const start = new Date(startedAt).getTime();
-  const value = endsAt === null ? "" : toInputValue(new Date(endsAt));
+  const value = endsAt === null ? "" : toDateTimeInput(new Date(endsAt));
 
   /** Prüfung im Browser — die Server-Route prüft noch einmal. */
   const problem = useMemo(() => {
@@ -107,7 +93,7 @@ export default function ManualCheckoutDialog({
     }
 
     toast.success("Ausgecheckt", {
-      description: `Die Anwesenheitszeit endet um ${formatTime(endedAt)}.`,
+      description: `Die Anwesenheitszeit endet um ${formatClockTime(endedAt)}.`,
     });
 
     setOpen(false);
@@ -140,7 +126,7 @@ export default function ManualCheckoutDialog({
         <DialogHeader>
           <DialogTitle>Wann bist du gegangen?</DialogTitle>
           <DialogDescription>
-            Du bist seit {formatTime(startedAt)} eingecheckt. Wähle die
+            Du bist seit {formatClockTime(startedAt)} eingecheckt. Wähle die
             ungefähre Uhrzeit, zu der du den Hase-Raum verlassen hast.
           </DialogDescription>
         </DialogHeader>
