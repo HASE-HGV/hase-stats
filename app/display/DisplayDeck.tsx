@@ -10,8 +10,15 @@ import { ChartNoAxesColumnIcon, ShieldAlertIcon } from "lucide-react";
 
 /** Wie lange eine Ansicht stehen bleibt, bevor gewechselt wird. */
 const VIEW_DURATION = 20000;
-/** Wie oft die Daten neu geladen werden. */
-const REFRESH_INTERVAL = 60000;
+/**
+ * Wie oft die Daten neu geladen werden.
+ *
+ * 15 s, weil die Praesenz-Leiste ("Gerade im Raum") live wirken soll: wer
+ * gerade reinkommt, steht nach spaetestens 15 s auf dem Kiosk. Die
+ * serverseitigen Daten sind gecacht (3-30 s), der Refresh kostet daher
+ * kaum mehr als ein Seitenabruf.
+ */
+const REFRESH_INTERVAL = 15000;
 
 /**
  * Kiosk-Ansicht: wechselt im Takt zwischen Wall of Shame und Rangliste.
