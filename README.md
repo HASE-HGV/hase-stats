@@ -211,7 +211,9 @@ die heutige Zeit — und checkt per **Tap** ein oder aus.
 2. Scriptable installieren, Script aus
    [`scriptable/hase-stats-widget.js`](scriptable/hase-stats-widget.js) anlegen
    (Name z. B. „Hase Stats") und einmal von Hand starten → es fragt App-Adresse
-   und Token ab und legt beides im Keychain ab.
+   und Token ab und legt beides im Keychain ab. Neu einrichten (andere Adresse
+   oder neues Token): Script mit `?action=setup` starten
+   (`scriptable:///run/Hase%20Stats?action=setup`, z. B. per Shortcut).
 3. Auf dem Home-Bildschirm ein **Scriptable-Widget** hinzufügen und das Script
    auswählen (klein oder mittel).
 

@@ -13,6 +13,10 @@
 // 3. Auf dem Home-Bildschirm ein Scriptable-Widget hinzufügen, Script
 //    „Hase Stats" auswählen (klein oder mittel).
 //
+// Einrichtung ändern (neue Adresse/neues Token): Script mit
+// `?action=setup` starten, z. B. über einen Shortcut mit der URL
+// `scriptable:///run/Hase%20Stats?action=setup`.
+//
 // Warum der Umweg über die App? iOS-Widgets können keine eigenen Buttons
 // haben. Der Tap öffnet deshalb das Script, das die API aufruft und das
 // Widget sofort neu zeichnet.
@@ -34,12 +38,24 @@ const DANGER = new Color("#f2a3a3");
 /* Einrichtung                                                                */
 /* -------------------------------------------------------------------------- */
 
+/**
+ * Keychain.get wirft eine Exception, wenn der Key fehlt (es gibt kein
+ * `null` zurueck) — beim ersten Start ist genau das der Fall.
+ */
+function keychainGet(key) {
+  try {
+    return Keychain.get(key);
+  } catch (error) {
+    return null;
+  }
+}
+
 function baseUrl() {
-  return Keychain.get(KEY_BASE);
+  return keychainGet(KEY_BASE);
 }
 
 function token() {
-  return Keychain.get(KEY_TOKEN);
+  return keychainGet(KEY_TOKEN);
 }
 
 async function setup() {
@@ -185,6 +201,16 @@ function buildWidget(status, problem) {
 async function main() {
   const inWidget = config.runsInWidget;
   const action = args.queryParameters ? args.queryParameters.action : null;
+
+  // Einrichtung erneut durchlaufen (z. B. neue Adresse oder neues Token):
+  // Script mit ?action=setup starten.
+  if (!inWidget && action === "setup") {
+    if (!(await setup())) {
+      Script.complete();
+      return;
+    }
+  }
+
   const configured = Boolean(baseUrl() && token());
 
   if (!configured) {
