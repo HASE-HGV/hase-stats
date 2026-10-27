@@ -15,9 +15,13 @@ export const presenceRanges: Array<{ value: PresenceRange; label: string }> = [
   { value: "all", label: "Allzeit" },
 ];
 
+/**
+ * Zeitraum aus der URL lesen. Ohne (gueltigen) Parameter gilt „letzte
+ * 7 Tage" — im Alltag die interessantere Frage als die Allzeit-Summe.
+ */
 export function parsePresenceRange(value: string | undefined): PresenceRange {
   const found = presenceRanges.find((r) => r.value === value);
-  return found?.value ?? "all";
+  return found?.value ?? "7d";
 }
 
 /** Eine Zeile aus `room_visit_leaderboard()`. */

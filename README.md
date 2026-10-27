@@ -13,8 +13,8 @@ Raspberry Pi im Büro.
 - Good Deed wird erst gültig, wenn **2 verschiedene** andere Personen bestätigt haben
 - Auto-Resolve: bei 2. Bestätigung wird der älteste offene WoS-Eintrag der Person entfernt
 - **Stats-Seite `/stats`**: Check-in/Check-out mit Live-Uhr, Rangliste als
-  Balkendiagramm (Zeiträume Heute / 7 Tage / 30 Tage / Allzeit) und Liste der
-  Personen, die gerade im Raum sind
+  Balkendiagramm (Zeiträume Heute / 7 Tage / 30 Tage / Allzeit, **Standard:
+  letzte 7 Tage**) und Liste der Personen, die gerade im Raum sind
 - **Aktivitäts-Graph** auf `/stats`: ein Jahr Anwesenheit als Kachel-Raster
   im GitHub-Stil (eine Spalte je Woche, vier Grün-Stufen nach Zeit pro Tag)
 - **Auschecken mit Uhrzeit**: wer das Auschecken vergessen hat, trägt die
@@ -25,9 +25,10 @@ Raspberry Pi im Büro.
 - **QR-Code zum Drucken** (`/stats/qr`): hängt an der Tür und schaltet die
   Anwesenheit des gerade eingeloggten Accounts um
 - **Kiosk-Route `/display`** für den Raspberry Pi (read-only, keine Auth):
-  wechselt alle 20 s zwischen Wall of Shame und Rangliste, zeigt dauerhaft
-  wer gerade im Raum ist, die Zeit an jedem Balken und darunter immer zwei
-  Zitate nebeneinander (Standzeit je Paar nach Länge, 14–32 s)
+  wechselt alle 20 s zwischen Wall of Shame und Rangliste (letzte 7 Tage),
+  zeigt dauerhaft wer gerade im Raum ist, die Zeit an jedem Balken und
+  darunter immer zwei Zitate nebeneinander (Standzeit je Paar nach Länge,
+  14–32 s)
 
 ## Stack
 

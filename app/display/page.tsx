@@ -16,6 +16,10 @@ import { ChartNoAxesColumnIcon, SparklesIcon } from "lucide-react";
 // Re-render every 30s when visited; also client auto-reloads below.
 export const revalidate = 30;
 
+/** Zeitraum der Rangliste auf dem Kiosk. */
+const DISPLAY_RANGE = "7d";
+const DISPLAY_RANGE_LABEL = "letzte 7 Tage";
+
 export default async function DisplayPage() {
   const supabase = await createClient();
   const [
@@ -36,7 +40,7 @@ export default async function DisplayPage() {
       .order("created_at", { ascending: false })
       .limit(30),
     supabase.from("profiles").select("id, username, avatar_url"),
-    getLeaderboard("all"),
+    getLeaderboard(DISPLAY_RANGE),
     getPresence(),
   ]);
 
@@ -177,6 +181,7 @@ export default async function DisplayPage() {
         quotes={quotes}
         wallCount={rows.length}
         statsCount={leaderboardRows.length}
+        statsRangeLabel={DISPLAY_RANGE_LABEL}
       />
 
       {/* Safety net: komplett neu laden, falls der Client-Timer hängt. */}

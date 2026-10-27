@@ -27,6 +27,7 @@ export default function DisplayDeck({
   quotes,
   wallCount,
   statsCount,
+  statsRangeLabel,
 }: {
   wallPanel: React.ReactNode;
   statsPanel: React.ReactNode;
@@ -35,6 +36,8 @@ export default function DisplayDeck({
   quotes: DisplayQuote[];
   wallCount: number;
   statsCount: number;
+  /** Zeitraum der Rangliste, z. B. "letzte 7 Tage". */
+  statsRangeLabel: string;
 }) {
   const router = useRouter();
   const [view, setView] = React.useState<"wall" | "stats">("wall");
@@ -70,10 +73,15 @@ export default function DisplayDeck({
                 </Badge>
               ) : null
             ) : (
-              <Badge variant="secondary" className="gap-1 text-sm">
-                <ChartNoAxesColumnIcon className="size-3.5" />
-                {statsCount} {statsCount === 1 ? "Person" : "Personen"}
-              </Badge>
+              <>
+                <Badge variant="secondary" className="gap-1 text-sm">
+                  <ChartNoAxesColumnIcon className="size-3.5" />
+                  {statsCount} {statsCount === 1 ? "Person" : "Personen"}
+                </Badge>
+                <span className="text-sm text-muted-foreground">
+                  {statsRangeLabel}
+                </span>
+              </>
             )}
           </div>
 
