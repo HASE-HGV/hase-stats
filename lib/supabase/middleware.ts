@@ -48,12 +48,14 @@ export async function updateSession(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
-  // Public routes: login, signup, display (kiosk), static assets
+  // Public routes: login, signup, display (kiosk), widget-API (Bearer-Token),
+  // static assets
   const isPublic =
     pathname.startsWith("/login") ||
     pathname.startsWith("/signup") ||
     pathname.startsWith("/display") ||
     pathname.startsWith("/auth") ||
+    pathname.startsWith("/api/widget") ||
     pathname === "/favicon.ico";
 
   if (!userId && !isPublic) {

@@ -98,6 +98,10 @@ Gemessen (lokaler Prod-Build, Median aus 5 Läufen, vorher → nachher):
 > Supabase Dashboard unter **Settings → API** den Schema-Cache neu laden
 > ("Reload schema"), damit `room_visit_leaderboard()` und die View
 > `room_presence` über die Data API erreichbar sind.
+>
+> Für das iPhone-Widget (Scriptable) zusätzlich
+> [`supabase/migrations/0010_api_tokens.sql`](supabase/migrations/0010_api_tokens.sql)
+> ausführen (Abschnitt 11 in `supabase/schema.sql`).
 
 ### 2. Lokales Dev-Setup
 
@@ -196,6 +200,33 @@ Wall of Shame und Rangliste.
 - Die Rangliste kommt aus `room_visit_leaderboard('all'|'today'|'7d'|'30d')`;
   offene Sessions zählen live bis jetzt. „Heute“ beginnt um 00:00 Ortszeit
   (Europe/Berlin).
+
+## iPhone-Widget (Scriptable)
+
+Das Widget ([Scriptable](https://scriptable.app)) zeigt Status, „seit wann" und
+die heutige Zeit — und checkt per **Tap** ein oder aus.
+
+1. In der App unter **Profil → Widget-Zugang** ein Token anlegen. Es wird nur
+   einmal im Klartext angezeigt (in der Datenbank liegt nur der SHA-256-Hash).
+2. Scriptable installieren, Script aus
+   [`scriptable/hase-stats-widget.js`](scriptable/hase-stats-widget.js) anlegen
+   (Name z. B. „Hase Stats") und einmal von Hand starten → es fragt App-Adresse
+   und Token ab und legt beides im Keychain ab.
+3. Auf dem Home-Bildschirm ein **Scriptable-Widget** hinzufügen und das Script
+   auswählen (klein oder mittel).
+
+Technik: iOS-Widgets können keine eigenen Buttons haben. Der Tap öffnet deshalb
+`scriptable:///run/<Script>?action=toggle`; das Script ruft die API auf und
+zeichnet das Widget sofort neu. Tokens sind jederzeit widerrufbar (Profil →
+Widget-Zugang → „…" → Widerrufen) und dürfen ausschließlich die eigene
+Anwesenheit lesen und setzen.
+
+Endpunkte für eigene Skripte (Auth: `Authorization: Bearer hs_…`):
+
+| Route | Zweck |
+|---|---|
+| `GET /api/widget/status` | `{ open, startedAt, todaySeconds, username, serverTime }` |
+| `POST /api/widget/presence` | `{ "open": true \| false }` — idempotent, kein Toggle |
 
 ## Datenmodell (Kurz)
 
