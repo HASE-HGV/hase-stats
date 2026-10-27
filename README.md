@@ -26,8 +26,8 @@ Raspberry Pi im Büro.
   Anwesenheit des gerade eingeloggten Accounts um
 - **Kiosk-Route `/display`** für den Raspberry Pi (read-only, keine Auth):
   wechselt alle 20 s zwischen Wall of Shame und Rangliste, zeigt dauerhaft
-  wer gerade im Raum ist, die Zeit an jedem Balken und darunter die Zitate
-  (Standzeit je Zitat nach Länge, 12–30 s)
+  wer gerade im Raum ist, die Zeit an jedem Balken und darunter immer zwei
+  Zitate nebeneinander (Standzeit je Paar nach Länge, 14–32 s)
 
 ## Stack
 
