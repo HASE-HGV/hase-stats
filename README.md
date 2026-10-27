@@ -182,6 +182,12 @@ Wall of Shame und Rangliste.
   Überschneidung** mit vorhandenen Einträgen (sonst würde die Zeit doppelt
   zählen). Der Eintrag landet ebenfalls über den Admin-Client in
   `room_visits` und taucht in Rangliste und Graph auf.
+- **Admins können andere auschecken.** In „Gerade im Raum“ hat jede fremde
+  Zeile einen Auscheck-Knopf (die eigene nicht — dafür ist die Karte oben
+  da). `POST /api/admin/presence/checkout` prüft `is_admin`, beendet genau
+  die angeklickte Session (ID aus `room_presence`) und erlaubt dabei
+  dieselbe Zeitkorrektur wie beim eigenen Auschecken. Typischer Fall: jemand
+  hat den Raum verlassen und das Auschecken vergessen.
 - Der **Aktivitäts-Graph** auf `/stats` zeigt die eigenen Besuche der letzten
   53 Wochen: `lib/activity.ts` summiert die Zeit je Kalendertag (Europe/Berlin,
   inklusive Tagesgrenzen und Sommerzeit — ein Besuch über Mitternacht zählt

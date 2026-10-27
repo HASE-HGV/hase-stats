@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { ClockIcon, HistoryIcon } from "lucide-react";
+import { ClockIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -23,25 +23,39 @@ import {
 } from "@/lib/presence";
 
 /**
- * Auschecken mit nachtraeglicher Uhrzeit.
+ * Auschecken mit (nachträglicher) Uhrzeit — für die eigene Session oder,
+ * als Admin, für eine andere Person.
  *
- * Wer den Hase-Raum verlassen hat und es vergessen hat, waehlt hier
- * ungefaehr die Uhrzeit, zu der er gegangen ist. Die Zeit muss nach dem
- * Check-in und vor jetzt liegen — geprueft wird das im Browser ( sofortige
- * Rueckmeldung) und noch einmal im Server (dort zaehlt).
+ * Normalerweise beendet der Check-out-Knopf die Session mit „jetzt“. Wer
+ * das Gehen vergessen hat, wählt hier die ungefähre Uhrzeit. Die Zeit muss
+ * nach dem Check-in und vor jetzt liegen — geprüft wird im Browser
+ * (sofortige Rückmeldung) und noch einmal auf dem Server (dort zählt).
+ *
+ * Der Dialog kennt den Unterschied zwischen „eigene Session“ und „andere
+ * Person“ nicht: Titel, Beschreibung und die Server-Route kommen von außen.
  */
 
 /** Schnellauswahl in Minuten vor "jetzt". */
 const QUICK_OPTIONS = [0, 15, 30, 60, 120];
 
-export default function ManualCheckoutDialog({
+export default function CheckoutDialog({
   startedAt,
-  onCheckedOut,
+  title,
+  description,
+  trigger,
+  onSubmit,
+  onDone,
 }: {
   /** Startzeit der offenen Session (ISO). */
   startedAt: string;
+  title: string;
+  description: string;
+  /** Der Auslöser-Knopf (wird als Dialog-Trigger gerendert). */
+  trigger: React.ReactElement;
+  /** Beendet die Session; gibt bei Fehlern eine Meldung zurück. */
+  onSubmit: (endedAt: string) => Promise<string | null>;
   /** Wird nach erfolgreichem Auschecken aufgerufen. */
-  onCheckedOut: (endedAt: string) => void;
+  onDone: (endedAt: string) => void;
 }) {
   const [open, setOpen] = useState(false);
   // Quelle der Wahrheit ist der Zeitstempel, nicht der Eingabewert: "Jetzt"
@@ -66,7 +80,7 @@ export default function ManualCheckoutDialog({
     setEndsAt(Date.now() - minutes * 60_000);
   }
 
-  async function onSubmit() {
+  async function handleSubmit() {
     if (problem || endsAt === null) {
       setError(problem ?? "Bitte eine Uhrzeit wählen.");
       return;
@@ -76,19 +90,14 @@ export default function ManualCheckoutDialog({
     setError(null);
 
     const endedAt = new Date(endsAt).toISOString();
-    const res = await fetch("/api/presence/checkout", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ endedAt }),
-    }).catch(() => null);
+    const message = await onSubmit(endedAt).catch(
+      () => "Auschecken hat nicht geklappt.",
+    );
 
     setLoading(false);
 
-    if (!res || !res.ok) {
-      const body = (await res?.json().catch(() => null)) as {
-        error?: string;
-      } | null;
-      setError(body?.error ?? "Auschecken hat nicht geklappt.");
+    if (message) {
+      setError(message);
       return;
     }
 
@@ -97,7 +106,7 @@ export default function ManualCheckoutDialog({
     });
 
     setOpen(false);
-    onCheckedOut(endedAt);
+    onDone(endedAt);
   }
 
   return (
@@ -113,22 +122,12 @@ export default function ManualCheckoutDialog({
         }
       }}
     >
-      <DialogTrigger
-        render={
-          <Button variant="outline" className="w-full sm:w-auto sm:self-start" />
-        }
-      >
-        <HistoryIcon />
-        Mit Zeit auschecken
-      </DialogTrigger>
+      <DialogTrigger render={trigger} />
 
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Wann bist du gegangen?</DialogTitle>
-          <DialogDescription>
-            Du bist seit {formatClockTime(startedAt)} eingecheckt. Wähle die
-            ungefähre Uhrzeit, zu der du den Hase-Raum verlassen hast.
-          </DialogDescription>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-col gap-4">
@@ -172,8 +171,7 @@ export default function ManualCheckoutDialog({
           {endsAt !== null && endsAt > start ? (
             <p className="meta flex items-center gap-1.5">
               <ClockIcon className="size-3" />
-              Dauer dieser Session:{" "}
-              {formatDuration((endsAt - start) / 1000)}
+              Dauer dieser Session: {formatDuration((endsAt - start) / 1000)}
             </p>
           ) : null}
         </div>
@@ -182,7 +180,7 @@ export default function ManualCheckoutDialog({
           <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
             Abbrechen
           </Button>
-          <Button type="button" onClick={onSubmit} disabled={loading}>
+          <Button type="button" onClick={handleSubmit} disabled={loading}>
             {loading ? <Spinner /> : null}
             {loading ? "Einen Moment…" : "Auschecken"}
           </Button>

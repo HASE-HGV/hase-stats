@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getAuthUser } from "@/lib/supabase/auth";
-import { getActivity, getLeaderboard, getPresence } from "@/lib/data";
+import { getActivity, getLeaderboard, getPresence, getProfile } from "@/lib/data";
 import {
   parsePresenceRange,
   presenceRanges,
@@ -47,10 +47,11 @@ export default async function StatsPage({
   // ist personenbezogen — alle drei sind serverseitig gecacht (beim Graph
   // ist die Nutzer-ID Teil des Cache-Schlüssels), der Seitenwechsel bleibt
   // dadurch schnell.
-  const [rows, inRoom, activity] = await Promise.all([
+  const [rows, inRoom, activity, profile] = await Promise.all([
     getLeaderboard(range),
     getPresence(),
     getActivity(user!.id),
+    getProfile(user!.id),
   ]);
 
   const mine = inRoom.find((r) => r.user_id === user!.id) ?? null;
@@ -159,7 +160,11 @@ export default async function StatsPage({
           </CardAction>
         </CardHeader>
         <CardContent>
-          <PresenceList rows={inRoom} />
+          <PresenceList
+            rows={inRoom}
+            currentUserId={user!.id}
+            isAdmin={profile?.is_admin === true}
+          />
         </CardContent>
       </Card>
     </div>

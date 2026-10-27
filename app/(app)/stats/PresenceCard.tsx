@@ -3,16 +3,21 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { ClockIcon, LogInIcon, LogOutIcon } from "lucide-react";
+import { ClockIcon, HistoryIcon, LogInIcon, LogOutIcon } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
 import { useNow } from "@/hooks/use-now";
-import { formatClock, formatDuration, type ToggleResult } from "@/lib/presence";
+import {
+  formatClock,
+  formatClockTime,
+  formatDuration,
+  type ToggleResult,
+} from "@/lib/presence";
 import AddVisitDialog from "./AddVisitDialog";
-import ManualCheckoutDialog from "./ManualCheckoutDialog";
+import CheckoutDialog from "./CheckoutDialog";
 
 /** Anzeigezustand der Karte. */
 type PresenceView = {
@@ -226,9 +231,35 @@ export default function PresenceCard({
             </Button>
 
             {checkedIn ? (
-              <ManualCheckoutDialog
+              <CheckoutDialog
                 startedAt={startedAt!}
-                onCheckedOut={onManualCheckout}
+                title="Wann bist du gegangen?"
+                description={`Du bist seit ${formatClockTime(startedAt!)} eingecheckt. Wähle die ungefähre Uhrzeit, zu der du den Hase-Raum verlassen hast.`}
+                trigger={
+                  <Button
+                    variant="outline"
+                    className="w-full sm:w-auto sm:self-start"
+                  >
+                    <HistoryIcon />
+                    Mit Zeit auschecken
+                  </Button>
+                }
+                onSubmit={async (endedAt) => {
+                  const res = await fetch("/api/presence/checkout", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ endedAt }),
+                  }).catch(() => null);
+
+                  if (!res || !res.ok) {
+                    const body = (await res?.json().catch(() => null)) as {
+                      error?: string;
+                    } | null;
+                    return body?.error ?? "Auschecken hat nicht geklappt.";
+                  }
+                  return null;
+                }}
+                onDone={onManualCheckout}
               />
             ) : null}
 
