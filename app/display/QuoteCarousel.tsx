@@ -16,18 +16,57 @@ function initial(label: string) {
   return label.replace(/^@/, "")[0]?.toUpperCase() ?? "?";
 }
 
+/**
+ * Wie lange ein Zitat stehen bleibt.
+ *
+ * Frueher waren es feste 8 Sekunden — fuer laengere Zitate und Dialoge zu
+ * kurz. Jetzt gibt es eine Grundzeit plus Lesezeit (etwa 2,5 Woerter pro
+ * Sekunde), gedeckelt nach oben, damit ein langer Dialog nicht ewig steht.
+ */
+function readingTime(quote: DisplayQuote): number {
+  const words = quote.lines
+    .map((line) => line.text)
+    .join(" ")
+    .split(/\s+/)
+    .filter(Boolean).length;
+
+  return Math.min(30_000, 12_000 + Math.round((words / 2.5) * 1000));
+}
+
 export default function QuoteCarousel({ quotes }: { quotes: DisplayQuote[] }) {
-  // Ein Zitat gleichzeitig, wechselt automatisch alle 8 Sekunden.
-  const autoplay = React.useRef(
-    Autoplay({ delay: 8000, stopOnInteraction: false, stopOnMouseEnter: false })
+  // Die Zitate koennen sich beim Server-Refresh aendern, das Plugin bleibt
+  // aber bestehen — deshalb liest die Delay-Funktion den aktuellen Stand
+  // ueber die Ref.
+  const quotesRef = React.useRef(quotes);
+  React.useEffect(() => {
+    quotesRef.current = quotes;
+  }, [quotes]);
+
+  // Plugin und Optionen muessen ueber Renders hinweg dieselben bleiben:
+  // Embla initialisiert bei jeder neuen Referenz neu, und ein Re-Init
+  // setzt den Autoplay-Timer zurueck. Bei einem Ansichtswechsel alle 20 s
+  // wuerde ein laengeres Zitat sonst nie durchkommen.
+  const [plugins] = React.useState(() => [
+    Autoplay({
+      // Ein Zitat gleichzeitig, Dauer je nach Laenge (siehe readingTime).
+      delay: (scrollSnaps) =>
+        scrollSnaps.map((_, index) => {
+          const list = quotesRef.current;
+          const quote = list[index];
+          return quote ? readingTime(quote) : 15_000;
+        }),
+      stopOnInteraction: false,
+      stopOnMouseEnter: false,
+    }),
+  ]);
+
+  const opts = React.useMemo(
+    () => ({ loop: true, align: "start" as const }),
+    []
   );
 
   return (
-    <Carousel
-      opts={{ loop: true, align: "start" }}
-      plugins={[autoplay.current]}
-      className="w-full"
-    >
+    <Carousel opts={opts} plugins={plugins} className="w-full">
       <CarouselContent>
         {quotes.map((q) => {
           const meta = (

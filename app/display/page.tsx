@@ -1,7 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
 import type { Profile, ShameWallRow, QuoteRow } from "@/lib/types";
 import { toDisplayQuote } from "@/lib/quotes";
-import { getLeaderboard } from "@/lib/data";
+import { getLeaderboard, getPresence } from "@/lib/data";
+import { STATS_TIME_ZONE } from "@/lib/activity";
+import { formatClockTimeIn } from "@/lib/presence";
+import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import UserAvatar from "@/components/user-avatar";
@@ -15,21 +18,27 @@ export const revalidate = 30;
 
 export default async function DisplayPage() {
   const supabase = await createClient();
-  const [{ data }, { data: quoteData }, { data: people }, leaderboardRows] =
-    await Promise.all([
-      supabase
-        .from("shame_wall")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(8),
-      supabase
-        .from("quotes_view")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(30),
-      supabase.from("profiles").select("id, username, avatar_url"),
-      getLeaderboard("all"),
-    ]);
+  const [
+    { data },
+    { data: quoteData },
+    { data: people },
+    leaderboardRows,
+    inRoomRows,
+  ] = await Promise.all([
+    supabase
+      .from("shame_wall")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(8),
+    supabase
+      .from("quotes_view")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(30),
+    supabase.from("profiles").select("id, username, avatar_url"),
+    getLeaderboard("all"),
+    getPresence(),
+  ]);
 
   const rows = (data ?? []) as ShameWallRow[];
   const quoteRows = (quoteData ?? []) as QuoteRow[];
@@ -95,10 +104,61 @@ export default async function DisplayPage() {
         <LeaderboardChart
           rows={leaderboardRows}
           height={420}
-          className="w-full text-base [&_.recharts-cartesian-axis-tick_text]:text-base"
+          showValues
+          className="w-full text-base [&_.recharts-cartesian-axis-tick_text]:text-base [&_.recharts-label-list_text]:text-base"
         />
       </div>
     );
+
+  // Wer gerade im Raum ist — dauerhaft sichtbar, nicht nur in der Rangliste.
+  const inRoomPanel = (
+    <div
+      className={cn(
+        "flex flex-wrap items-center gap-x-6 gap-y-2 rounded-2xl bg-card/70 px-5 py-3 ring-1 ring-inset",
+        inRoomRows.length > 0 ? "ring-success/20" : "ring-foreground/5",
+      )}
+    >
+      <span className="flex items-center gap-2.5 text-lg font-medium">
+        <span className="relative flex size-2.5 shrink-0">
+          {inRoomRows.length > 0 ? (
+            <span className="absolute inline-flex size-full animate-ping rounded-full bg-success opacity-60" />
+          ) : null}
+          <span
+            className={cn(
+              "relative inline-flex size-2.5 rounded-full",
+              inRoomRows.length > 0 ? "bg-success" : "bg-muted-foreground/50",
+            )}
+          />
+        </span>
+        Gerade im Raum
+        <span className="tabular-nums text-muted-foreground">
+          {inRoomRows.length}
+        </span>
+      </span>
+
+      {inRoomRows.length === 0 ? (
+        <span className="text-lg text-muted-foreground">
+          Niemand — der Raum ist leer.
+        </span>
+      ) : (
+        <ul className="flex list-none flex-wrap items-center gap-x-6 gap-y-2 p-0">
+          {inRoomRows.map((row) => (
+            <li key={row.id} className="flex items-center gap-2.5">
+              <UserAvatar
+                username={row.username}
+                avatarUrl={row.avatar_url}
+                size="sm"
+              />
+              <span className="text-lg font-medium">@{row.username}</span>
+              <span className="text-sm text-muted-foreground">
+                seit {formatClockTimeIn(row.started_at, STATS_TIME_ZONE)}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
 
   return (
     <div
@@ -113,6 +173,7 @@ export default async function DisplayPage() {
       <DisplayDeck
         wallPanel={wallPanel}
         statsPanel={statsPanel}
+        inRoomPanel={inRoomPanel}
         quotes={quotes}
         wallCount={rows.length}
         statsCount={leaderboardRows.length}

@@ -23,12 +23,15 @@ const REFRESH_INTERVAL = 60000;
 export default function DisplayDeck({
   wallPanel,
   statsPanel,
+  inRoomPanel,
   quotes,
   wallCount,
   statsCount,
 }: {
   wallPanel: React.ReactNode;
   statsPanel: React.ReactNode;
+  /** Wer gerade im Raum ist (serverseitig gerendert). */
+  inRoomPanel: React.ReactNode;
   quotes: DisplayQuote[];
   wallCount: number;
   statsCount: number;
@@ -97,6 +100,8 @@ export default function DisplayDeck({
             </span>
           </div>
         </div>
+
+        {inRoomPanel}
 
         <div
           key={view}

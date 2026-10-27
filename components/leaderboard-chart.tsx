@@ -1,6 +1,6 @@
 "use client";
 
-import { Bar, BarChart, Cell, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, Cell, LabelList, XAxis, YAxis } from "recharts";
 import {
   ChartContainer,
   ChartTooltip,
@@ -35,11 +35,14 @@ export default function LeaderboardChart({
   currentUserId,
   height,
   className,
+  showValues = false,
 }: {
   rows: LeaderboardRow[];
   currentUserId?: string;
   height?: number;
   className?: string;
+  /** Zeit am Balkenende anzeigen (Kiosk — dort gibt es keinen Tooltip). */
+  showValues?: boolean;
 }) {
   const data = rows.map((row) => ({
     username: `@${row.username}`,
@@ -59,7 +62,8 @@ export default function LeaderboardChart({
       <BarChart
         data={data}
         layout="vertical"
-        margin={{ top: 4, right: 16, bottom: 4, left: 0 }}
+        // Rechts Platz fuer die Zeit-Beschriftung am Balkenende.
+        margin={{ top: 4, right: showValues ? 96 : 16, bottom: 4, left: 0 }}
       >
         <XAxis
           type="number"
@@ -112,6 +116,16 @@ export default function LeaderboardChart({
               }
             />
           ))}
+
+          {showValues ? (
+            <LabelList
+              dataKey="hours"
+              position="right"
+              offset={8}
+              className="fill-foreground text-sm font-medium"
+              formatter={(value) => formatDuration(Number(value) * 3600)}
+            />
+          ) : null}
         </Bar>
       </BarChart>
     </ChartContainer>

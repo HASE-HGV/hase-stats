@@ -24,8 +24,10 @@ Raspberry Pi im Büro.
   Überschneidungen mit vorhandenen Einträgen
 - **QR-Code zum Drucken** (`/stats/qr`): hängt an der Tür und schaltet die
   Anwesenheit des gerade eingeloggten Accounts um
-- **Kiosk-Route `/display`** für den Raspberry Pi (read-only, wechselt zwischen
-  Wall of Shame und Rangliste, keine Auth)
+- **Kiosk-Route `/display`** für den Raspberry Pi (read-only, keine Auth):
+  wechselt alle 20 s zwischen Wall of Shame und Rangliste, zeigt dauerhaft
+  wer gerade im Raum ist, die Zeit an jedem Balken und darunter die Zitate
+  (Standzeit je Zitat nach Länge, 12–30 s)
 
 ## Stack
 
@@ -152,7 +154,7 @@ Wall of Shame und Rangliste.
 | `/confirm`         | ja   | Offene Good Deeds anderer Personen bestätigen |
 | `/quotes`          | ja   | Zitate und Dialoge                            |
 | `/profile`         | ja   | Username + Avatar pflegen                     |
-| `/display`         | nein | Vollbild-Kiosk-Ansicht für den Raspberry Pi   |
+| `/display`         | nein | Vollbild-Kiosk: Wall/Rangliste, Präsenzleiste, Zitate |
 
 ## Anwesenheit im Hase-Raum
 

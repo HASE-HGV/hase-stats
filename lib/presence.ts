@@ -103,3 +103,22 @@ export function formatClockTime(value: string | number | Date): string {
     minute: "2-digit",
   });
 }
+
+/**
+ * Uhrzeit im Kurzformat in einer festen Zeitzone.
+ *
+ * Fuer Stellen, die serverseitig rendern (Kiosk /display): dort gilt die
+ * Zeitzone des Servers (meist UTC), nicht die der Betrachter.
+ */
+export function formatClockTimeIn(
+  value: string | number | Date,
+  timeZone: string,
+): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat("de-DE", {
+    timeZone,
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
