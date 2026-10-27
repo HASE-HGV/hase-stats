@@ -62,3 +62,37 @@ export function formatDay(iso: string) {
   const [y, m, d] = iso.split("-");
   return `${d}.${m}.${y}`;
 }
+
+/** FNV-1a: kurzer, stabiler String-Hash (fuer die Zufallsreihenfolge). */
+function hashString(value: string): number {
+  let hash = 2166136261;
+  for (let i = 0; i < value.length; i++) {
+    hash ^= value.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+}
+
+/** Nach diesem Zeitraum wechselt die Zitat-Reihenfolge auf dem Kiosk. */
+export const QUOTE_SHUFFLE_WINDOW = 10 * 60 * 1000;
+
+/**
+ * Zufaellige, aber stabile Reihenfolge fuer den Kiosk.
+ *
+ * Wuerde die Reihenfolge bei jedem Rendern neu gewuerfelt, waere das
+ * serverseitig gerenderte HTML sofort anders als das im Browser
+ * (Hydration-Fehler) — und waehrend des Anzeigens wuerde alle 60 Sekunden
+ * das sichtbare Zitat springen. Deshalb haengt die Reihenfolge an einem
+ * Zeitfenster: alle 10 Minuten eine neue Mischung, dazwischen stabil.
+ */
+export function shuffleQuotesForDisplay<T extends { id: string }>(
+  quotes: T[],
+  now: number = Date.now()
+): T[] {
+  const bucket = Math.floor(now / QUOTE_SHUFFLE_WINDOW);
+  return [...quotes].sort((a, b) => {
+    const diff =
+      hashString(`${bucket}:${a.id}`) - hashString(`${bucket}:${b.id}`);
+    return diff === 0 ? a.id.localeCompare(b.id) : diff;
+  });
+}

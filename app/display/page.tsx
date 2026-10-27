@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import type { Profile, ShameWallRow, QuoteRow } from "@/lib/types";
-import { toDisplayQuote } from "@/lib/quotes";
+import { toDisplayQuote, shuffleQuotesForDisplay } from "@/lib/quotes";
 import { getLeaderboard, getPresence } from "@/lib/data";
 import { STATS_TIME_ZONE } from "@/lib/activity";
 import { formatClockTimeIn } from "@/lib/presence";
@@ -51,7 +51,9 @@ export default async function DisplayPage() {
       (p) => [p.id, { username: p.username, avatar_url: p.avatar_url }]
     )
   );
-  const quotes = quoteRows.map((q) => toDisplayQuote(q, profileMap));
+  const quotes = shuffleQuotesForDisplay(
+    quoteRows.map((q) => toDisplayQuote(q, profileMap))
+  );
 
   const wallPanel =
     rows.length === 0 ? (
