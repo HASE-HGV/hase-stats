@@ -332,8 +332,10 @@ private struct HaseStatsWidget: View {
     var body: some View {
         VStack(alignment: .leading, spacing: DroppySpacing.sm) {
             header
+            // Nimmt die Resthöhe: so sitzt der Aktions-Knopf auf der
+            // unteren Linie des Widgets statt direkt unter dem Text.
             content
-            Spacer(minLength: 0)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
         .padding(context.contentInsets)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
