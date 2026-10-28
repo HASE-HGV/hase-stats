@@ -223,6 +223,16 @@ zeichnet das Widget sofort neu. Tokens sind jederzeit widerrufbar (Profil →
 Widget-Zugang → „…" → Widerrufen) und dürfen ausschließlich die eigene
 Anwesenheit lesen und setzen.
 
+### macOS: Droppy-Droplet
+
+Für [Droppy](https://getdroppy.app) liegt unter
+[`droppy/hase-stats`](droppy/hase-stats) ein Droplet fürs Shelf: Status,
+heutige Zeit und Ein-/Auschecken per Klick, dazu eine Live Activity neben der
+Notch. Es nutzt dieselbe Widget-API und dasselbe Token wie das iPhone-Widget —
+Adresse und Token werden in den Droplet-Einstellungen hinterlegt (Token im
+Keychain). Build und Test: `droppykit run` / `droppykit build` im
+Droplet-Ordner, Details in dessen README.
+
 Endpunkte für eigene Skripte (Auth: `Authorization: Bearer hs_…`):
 
 | Route | Zweck |

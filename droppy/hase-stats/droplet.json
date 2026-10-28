@@ -1,0 +1,42 @@
+{
+  "id": "hase-stats",
+  "name": "Hase Stats",
+  "version": "1.0.0",
+  "summary": "Ein- und auschecken im Hase-Raum, direkt am Shelf",
+  "description": "Zeigt am Shelf, ob du gerade im Hase-Raum eingecheckt bist, seit wann und wie viel Zeit heute zusammengekommen ist — und checkt per Klick ein oder aus. Während eine Session läuft, steht die Zeit auch neben der Notch.\n\nDie Daten kommen aus deiner Hase-Stats-Instanz. Dafür in der App unter Profil → Widget-Zugang ein Token anlegen und hier zusammen mit der Adresse eintragen; das Token liegt im Keychain. Das Droplet benutzt dieselbe API wie das iPhone-Widget.",
+  "category": "Productivity",
+  "kit": {
+    "abi": 1,
+    "minAPI": "1.9.0"
+  },
+  "minAppVersion": "15.3.0",
+  "capabilities": [
+    "network-client",
+    "hud"
+  ],
+  "surfaces": [
+    "shelf-widget",
+    "live-activity",
+    "settings-pane",
+    "hud"
+  ],
+  "icon": "HaseStats.icon",
+  "creator": {
+    "name": "HASE",
+    "kind": "community",
+    "url": "https://github.com/HASE-HGV/hase-stats",
+    "avatar": "Creator.png"
+  },
+  "source": {
+    "repository": "https://gitlab.com/droppyformac1/droplets/-/tree/main/droplets/hase-stats",
+    "license": "MIT"
+  },
+  "screenshots": [],
+  "keywords": [
+    "hase",
+    "raum",
+    "anwesenheit",
+    "check-in",
+    "stats"
+  ]
+}
