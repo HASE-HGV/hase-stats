@@ -27,7 +27,7 @@ export default async function DisplayPage() {
     { data: quoteData },
     { data: people },
     leaderboardRows,
-    inRoomRows,
+    presenceRows,
   ] = await Promise.all([
     supabase
       .from("shame_wall")
@@ -46,6 +46,9 @@ export default async function DisplayPage() {
 
   const rows = (data ?? []) as ShameWallRow[];
   const quoteRows = (quoteData ?? []) as QuoteRow[];
+  // Der Kiosk zeigt nur, wer physisch im Hase-Raum ist — Home-Office-Zeit
+  // taucht in der Rangliste auf, nicht in der Praesenz-Leiste.
+  const inRoomRows = presenceRows.filter((row) => row.location === "room");
   const profileMap = new Map(
     ((people ?? []) as Pick<Profile, "id" | "username" | "avatar_url">[]).map(
       (p) => [p.id, { username: p.username, avatar_url: p.avatar_url }]
@@ -102,7 +105,7 @@ export default async function DisplayPage() {
           <ChartNoAxesColumnIcon className="size-10 text-primary" />
         </div>
         <p className="text-2xl font-medium text-balance">
-          Noch keine Besuche im Hase-Raum.
+          Noch keine Anwesenheitszeiten.
         </p>
       </div>
     ) : (

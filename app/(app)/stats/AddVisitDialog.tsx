@@ -19,8 +19,12 @@ import { Spinner } from "@/components/ui/spinner";
 import {
   formatClockTime,
   formatDuration,
+  presenceLocationLabel,
+  presenceLocations,
   toDateTimeInput,
+  type PresenceLocation,
 } from "@/lib/presence";
+import { cn } from "@/lib/utils";
 
 /**
  * Vergessene Anwesenheit komplett nachtragen.
@@ -42,12 +46,16 @@ function toMinute(ms: number): number {
 }
 
 export default function AddVisitDialog({
+  defaultLocation = "room",
   onAdded,
 }: {
-  /** Wird nach erfolgreichem Nachtragen aufgerufen (Sekunden). */
-  onAdded: (seconds: number) => void;
+  /** Vorausgewählter Ort (z. B. die laufende Session). */
+  defaultLocation?: PresenceLocation;
+  /** Wird nach erfolgreichem Nachtragen aufgerufen. */
+  onAdded: (seconds: number, location: PresenceLocation) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [location, setLocation] = useState<PresenceLocation>(defaultLocation);
   const [start, setStart] = useState<number | null>(null);
   const [end, setEnd] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
@@ -75,6 +83,7 @@ export default function AddVisitDialog({
     const now = toMinute(Date.now());
     setEnd(now);
     setStart(now - 2 * 60 * 60 * 1000);
+    setLocation(defaultLocation);
     setError(null);
   }
 
@@ -93,6 +102,7 @@ export default function AddVisitDialog({
       body: JSON.stringify({
         startedAt: new Date(start).toISOString(),
         endedAt: new Date(end).toISOString(),
+        location,
       }),
     }).catch(() => null);
 
@@ -112,11 +122,11 @@ export default function AddVisitDialog({
     const seconds = body?.seconds ?? Math.round((end - start) / 1000);
 
     toast.success("Zeit nachgetragen", {
-      description: `${formatDuration(seconds)} am ${new Date(start).toLocaleDateString("de-DE")}, ${formatClockTime(start)}–${formatClockTime(end)}.`,
+      description: `${formatDuration(seconds)} im ${presenceLocationLabel(location)} am ${new Date(start).toLocaleDateString("de-DE")}, ${formatClockTime(start)}–${formatClockTime(end)}.`,
     });
 
     setOpen(false);
-    onAdded(seconds);
+    onAdded(seconds, location);
   }
 
   return (
@@ -134,12 +144,39 @@ export default function AddVisitDialog({
         <DialogHeader>
           <DialogTitle>Zeit nachtragen</DialogTitle>
           <DialogDescription>
-            Du warst im Hase-Raum, hast aber nicht eingecheckt? Trag Start und
-            Ende hier nach.
+            Du warst im Hase-Raum oder im Home Office, hast aber nicht
+            eingecheckt? Trag Start und Ende hier nach.
           </DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-2">
+            <Label>Ort</Label>
+            <div className="inline-flex w-fit flex-wrap gap-1 rounded-2xl bg-muted p-1">
+              {presenceLocations.map((option) => {
+                const active = option.value === location;
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => setLocation(option.value)}
+                    className={cn(
+                      "rounded-xl px-3 py-1.5 text-sm font-medium transition-colors",
+                      active
+                        ? option.value === "homeoffice"
+                          ? "bg-warning/15 text-warning shadow-sm"
+                          : "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    {option.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="flex flex-col gap-2">
               <Label htmlFor="visit-start">Start</Label>

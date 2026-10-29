@@ -6,7 +6,13 @@ import { LogOutIcon } from "lucide-react";
 import UserAvatar from "@/components/user-avatar";
 import { Button } from "@/components/ui/button";
 import { useNow } from "@/hooks/use-now";
-import { formatClock, formatClockTime, type PresenceRow } from "@/lib/presence";
+import {
+  formatClock,
+  formatClockTime,
+  presenceLocationLabel,
+  type PresenceRow,
+} from "@/lib/presence";
+import { cn } from "@/lib/utils";
 import CheckoutDialog from "./CheckoutDialog";
 
 /**
@@ -36,7 +42,7 @@ export default function PresenceList({
   if (visible.length === 0) {
     return (
       <p className="text-sm leading-relaxed text-muted-foreground">
-        Gerade ist niemand im Hase-Raum.
+        Gerade ist niemand anwesend.
       </p>
     );
   }
@@ -64,8 +70,25 @@ export default function PresenceList({
               <span className="truncate text-sm font-medium">
                 @{row.username}
               </span>
-              <span className="truncate text-xs text-muted-foreground">
-                seit {formatClockTime(row.started_at)}
+              <span className="flex items-center gap-1.5 truncate text-xs text-muted-foreground">
+                <span
+                  className={cn(
+                    "size-1.5 shrink-0 rounded-full",
+                    row.location === "homeoffice"
+                      ? "bg-warning"
+                      : "bg-primary",
+                  )}
+                />
+                <span
+                  className={cn(
+                    row.location === "homeoffice"
+                      ? "text-warning"
+                      : "text-muted-foreground",
+                  )}
+                >
+                  {presenceLocationLabel(row.location)}
+                </span>
+                <span>· seit {formatClockTime(row.started_at)}</span>
               </span>
             </div>
             <span

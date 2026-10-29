@@ -13,8 +13,12 @@ Raspberry Pi im Büro.
 - Good Deed wird erst gültig, wenn **2 verschiedene** andere Personen bestätigt haben
 - Auto-Resolve: bei 2. Bestätigung wird der älteste offene WoS-Eintrag der Person entfernt
 - **Stats-Seite `/stats`**: Check-in/Check-out mit Live-Uhr, Rangliste als
-  Balkendiagramm (Zeiträume Heute / 7 Tage / 30 Tage / Allzeit, **Standard:
-  letzte 7 Tage**) und Liste der Personen, die gerade im Raum sind
+  gestapeltes Balkendiagramm (blau = Hase-Raum, gelb = Home Office; Zeiträume
+  Heute / 7 Tage / 30 Tage / Allzeit, **Standard: letzte 7 Tage**) und Liste
+  der Personen, die gerade im Raum oder im Home Office sind
+- **Home Office / andere Orte**: eigener Check-in im Web-Panel; die Zeit
+  landet getrennt vom Hase-Raum in der Rangliste und kann auch nachgetragen
+  werden
 - **Aktivitäts-Graph** auf `/stats`: ein Jahr Anwesenheit als Kachel-Raster
   im GitHub-Stil (eine Spalte je Woche, vier Grün-Stufen nach Zeit pro Tag)
 - **Auschecken mit Uhrzeit**: wer das Auschecken vergessen hat, trägt die
@@ -102,6 +106,12 @@ Gemessen (lokaler Prod-Build, Median aus 5 Läufen, vorher → nachher):
 > Für das iPhone-Widget (Scriptable) zusätzlich
 > [`supabase/migrations/0010_api_tokens.sql`](supabase/migrations/0010_api_tokens.sql)
 > ausführen (Abschnitt 11 in `supabase/schema.sql`).
+>
+> Für den Home-Office-Zähler zusätzlich
+> [`supabase/migrations/0011_home_office.sql`](supabase/migrations/0011_home_office.sql)
+> ausführen (Abschnitt 10 in `supabase/schema.sql`). Danach ebenfalls den
+> Schema-Cache neu laden, weil sich die Signatur von
+> `toggle_room_visit()` und die Rückgabespalten der Rangliste geändert haben.
 
 ### 2. Lokales Dev-Setup
 
@@ -150,7 +160,7 @@ Wall of Shame und Rangliste.
 | `/auth/forgot-password` | nein | Passwort-Reset anfordern                 |
 | `/auth/reset-password`  | nein | Neues Passwort setzen                     |
 | `/wall`            | ja   | Wall of Shame – Liste + neuer Eintrag         |
-| `/stats`           | ja   | Anwesenheit, Rangliste, „gerade im Raum“       |
+| `/stats`           | ja   | Anwesenheit, Rangliste, „gerade anwesend“      |
 | `/stats/qr`        | ja   | Druckbares QR-Poster für die Tür              |
 | `/stats/checkin`   | ja   | Check-in/Check-out per QR (Route-Handler)     |
 | `/api/presence/checkout` | ja | Auschecken mit eigener Uhrzeit (JSON)      |
@@ -162,12 +172,17 @@ Wall of Shame und Rangliste.
 | `/profile`         | ja   | Username + Avatar pflegen                     |
 | `/display`         | nein | Vollbild-Kiosk: Wall/Rangliste, Präsenzleiste, Zitate |
 
-## Anwesenheit im Hase-Raum
+## Anwesenheit im Hase-Raum & Home Office
 
 - **Check-in / Check-out** auf `/stats` oder per **QR-Code** (`/stats/qr`
   drucken und an die Tür hängen). Der QR-Code enthält nur die Route
   `/stats/checkin` — wer ihn scannt, schaltet die Zeit für den Account um,
   der auf dem Handy angemeldet ist.
+- **Home Office / andere Orte** haben einen eigenen Check-in-Knopf auf
+  `/stats`. Der Ort steckt in `room_visits.location` (`room` oder
+  `homeoffice`). Ein Check-in am anderen Ort wechselt die laufende Session:
+  Die bisherige Zeit wird beendet, die neue startet sofort. In der Rangliste
+  erscheint die Home-Office-Zeit als gelber Balkenanteil.
 - Nach dem Scan wird auf `/stats` umgeleitet (Status-Banner), damit ein
   versehentlicher Reload **nicht** erneut umschaltet.
 - Die Zeit wird ausschließlich serverseitig festgehalten: die DB-Funktion
@@ -185,8 +200,9 @@ Wall of Shame und Rangliste.
   Ende, Ende nicht in der Zukunft, höchstens 24 Stunden lang und **keine
   Überschneidung** mit vorhandenen Einträgen (sonst würde die Zeit doppelt
   zählen). Der Eintrag landet ebenfalls über den Admin-Client in
-  `room_visits` und taucht in Rangliste und Graph auf.
-- **Admins können andere auschecken.** In „Gerade im Raum“ hat jede fremde
+  `room_visits` und taucht in Rangliste und Graph auf. Im Popup lässt sich
+  der Ort (Hase-Raum oder Home Office) wählen.
+- **Admins können andere auschecken.** In „Gerade anwesend“ hat jede fremde
   Zeile einen Auscheck-Knopf (die eigene nicht — dafür ist die Karte oben
   da). `POST /api/admin/presence/checkout` prüft `is_admin`, beendet genau
   die angeklickte Session (ID aus `room_presence`) und erlaubt dabei
@@ -196,10 +212,12 @@ Wall of Shame und Rangliste.
   53 Wochen: `lib/activity.ts` summiert die Zeit je Kalendertag (Europe/Berlin,
   inklusive Tagesgrenzen und Sommerzeit — ein Besuch über Mitternacht zählt
   auf beide Tage). Grüne Stufen: bis 30 min, bis 1 h, bis 2 h, darüber.
-- Pro Person ist immer nur **eine** offene Session erlaubt.
-- Die Rangliste kommt aus `room_visit_leaderboard('all'|'today'|'7d'|'30d')`;
-  offene Sessions zählen live bis jetzt. „Heute“ beginnt um 00:00 Ortszeit
-  (Europe/Berlin).
+- Pro Person ist immer nur **eine** offene Session erlaubt — egal ob im
+  Hase-Raum oder im Home Office.
+- Die Rangliste kommt aus `room_visit_leaderboard('all'|'today'|'7d'|'30d')`
+  und liefert neben `total_seconds` auch `room_seconds` und
+  `homeoffice_seconds`; offene Sessions zählen live bis jetzt. „Heute“
+  beginnt um 00:00 Ortszeit (Europe/Berlin).
 
 ## iPhone-Widget (Scriptable)
 
@@ -248,7 +266,7 @@ shame_entries(target_user_id, reported_by, reason, resolved_at, resolved_by_deed
 good_deed_templates(title, description, active)
 good_deeds(user_id, template_id?, description?, photo_url, status)
 good_deed_confirmations(deed_id, confirmed_by) UNIQUE(deed_id, confirmed_by)
-room_visits(id, user_id, started_at, ended_at?)  -- offene Session: ended_at IS NULL
+room_visits(id, user_id, started_at, ended_at?, location)  -- location: room | homeoffice; offene Session: ended_at IS NULL
 ```
 
 - DB-Trigger `maybe_approve_deed` setzt einen Deed bei 2 Bestätigungen auf

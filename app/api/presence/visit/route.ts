@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getAuthUser } from "@/lib/supabase/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { TAG_ACTIVITY, TAG_LEADERBOARD, TAG_PRESENCE } from "@/lib/data";
+import { parsePresenceLocation } from "@/lib/presence";
 
 export const dynamic = "force-dynamic";
 
@@ -37,6 +38,7 @@ export async function POST(request: Request) {
   const body = (await request.json().catch(() => null)) as {
     startedAt?: string;
     endedAt?: string;
+    location?: unknown;
   } | null;
 
   if (!body?.startedAt || !body?.endedAt) {
@@ -74,6 +76,7 @@ export async function POST(request: Request) {
     );
   }
 
+  const location = parsePresenceLocation(body.location);
   const admin = createAdminClient();
 
   // Überschneidung mit vorhandenen Einträgen? Alle Sessions, die vor dem
@@ -110,6 +113,7 @@ export async function POST(request: Request) {
       user_id: user.id,
       started_at: start.toISOString(),
       ended_at: end.toISOString(),
+      location,
     })
     .select("id")
     .single();
@@ -126,6 +130,7 @@ export async function POST(request: Request) {
   return NextResponse.json({
     ok: true,
     id: created?.id ?? null,
+    location,
     seconds: Math.round((end.getTime() - start.getTime()) / 1000),
   });
 }

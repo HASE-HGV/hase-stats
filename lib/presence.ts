@@ -5,6 +5,32 @@
  * nur noch um die Aufbereitung fuer die UI.
  */
 
+/** Ort der Anwesenheit: Hase-Raum oder Home Office / andere Orte. */
+export type PresenceLocation = "room" | "homeoffice";
+
+/** Anzeige-Namen der Orte (Rangliste, Check-in, Badges). */
+export const presenceLocations: Array<{
+  value: PresenceLocation;
+  label: string;
+}> = [
+  { value: "room", label: "Hase-Raum" },
+  { value: "homeoffice", label: "Home Office" },
+];
+
+/** Unbekannte Werte fallen auf den Hase-Raum zurueck. */
+export function parsePresenceLocation(
+  value: unknown,
+): PresenceLocation {
+  return value === "homeoffice" ? "homeoffice" : "room";
+}
+
+/** Anzeige-Name eines Ortes. */
+export function presenceLocationLabel(
+  location: PresenceLocation | null | undefined,
+): string {
+  return location === "homeoffice" ? "Home Office" : "Hase-Raum";
+}
+
 /** Zeitraum-Filter der Rangliste. */
 export type PresenceRange = "today" | "7d" | "30d" | "all";
 
@@ -29,18 +55,24 @@ export type LeaderboardRow = {
   user_id: string;
   username: string;
   avatar_url: string | null;
+  /** Summe aus Hase-Raum und Home Office. */
   total_seconds: number;
+  /** Zeit im Hase-Raum. */
+  room_seconds: number;
+  /** Zeit im Home Office / an anderen Orten. */
+  homeoffice_seconds: number;
   visit_count: number;
   last_visit_at: string | null;
 };
 
-/** Eine Zeile aus der View `room_presence` (wer gerade im Raum ist). */
+/** Eine Zeile aus der View `room_presence` (wer gerade anwesend ist). */
 export type PresenceRow = {
   id: string;
   user_id: string;
   username: string;
   avatar_url: string | null;
   started_at: string;
+  location: PresenceLocation;
 };
 
 /** Rückgabe von `toggle_room_visit()`. */
@@ -49,6 +81,7 @@ export type ToggleResult = {
   user_id: string;
   started_at: string;
   ended_at: string | null;
+  location: PresenceLocation;
   open: boolean;
 };
 

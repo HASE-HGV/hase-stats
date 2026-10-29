@@ -14,6 +14,9 @@ export const dynamic = "force-dynamic";
  * Accounts um, der gerade angemeldet ist, und leitet danach auf `/stats`
  * weiter — ein Reload dort schaltet **nicht** erneut um.
  *
+ * Ohne Argument checkt die Funktion in den Hase-Raum ein. Laeuft bereits
+ * eine Home-Office-Session, wird sie beendet und in den Raum gewechselt.
+ *
  * Bewusst ein Route-Handler und keine Server-Page: Server-Components
  * koennen in Dev doppelt gerendert werden, was einen Toggle gefoerdert
  * zuruecknehmen wuerde.

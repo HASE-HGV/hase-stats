@@ -411,18 +411,37 @@ create or replace view public.quotes_view as
 grant select on public.quotes_view to anon, authenticated;
 
 -- ----------------------------------------------------------------------------
--- 10. ROOM VISITS (Check-in / Check-out im Hase-Raum)
+-- 10. ROOM VISITS (Check-in / Check-out im Hase-Raum + Home Office)
 -- Zeit-Tracking: `room_visits` haelt die Besuche fest. Geschrieben wird
 -- ausschliesslich ueber `toggle_room_visit()`, damit keine Zeitstempel
--- backdatet werden koennen.
+-- backdatet werden koennen. `location` trennt Hase-Raum ('room') von
+-- Home Office / anderen Orten ('homeoffice').
 -- ----------------------------------------------------------------------------
 create table if not exists public.room_visits (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.profiles(id) on delete cascade,
   started_at timestamptz not null default now(),
   ended_at timestamptz,
+  location text not null default 'room',
   constraint room_visits_duration check (ended_at is null or ended_at >= started_at)
 );
+
+-- Fuer bestehende Projekte, die das Schema erneut ausfuehren.
+alter table public.room_visits
+  add column if not exists location text not null default 'room';
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'room_visits_location_check'
+      and conrelid = 'public.room_visits'::regclass
+  ) then
+    alter table public.room_visits
+      add constraint room_visits_location_check
+      check (location in ('room', 'homeoffice'));
+  end if;
+end $$;
 
 create index if not exists room_visits_user_idx
   on public.room_visits (user_id, started_at desc);
@@ -438,7 +457,12 @@ create policy "room_visits read" on public.room_visits
   for select to authenticated using (true);
 
 -- Toggle: offene Session schliessen (Check-out) oder neue oeffnen (Check-in).
-create or replace function public.toggle_room_visit()
+-- Ohne Argument gilt der Hase-Raum. Ein Check-in am anderen Ort beendet die
+-- laufende Session und startet die neue (Wechsel).
+drop function if exists public.toggle_room_visit();
+drop function if exists public.toggle_room_visit(text);
+
+create or replace function public.toggle_room_visit(p_location text default 'room')
 returns jsonb
 language plpgsql
 security definer
@@ -446,10 +470,15 @@ set search_path = public
 as $$
 declare
   v_user uuid := auth.uid();
+  v_location text := coalesce(nullif(p_location, ''), 'room');
   v_visit public.room_visits;
 begin
   if v_user is null then
     raise exception 'Not authenticated';
+  end if;
+
+  if v_location not in ('room', 'homeoffice') then
+    raise exception 'Unknown location: %', p_location;
   end if;
 
   -- Exklusiv pro Person: verhindert, dass zwei Geraete parallel einschalten.
@@ -462,13 +491,26 @@ begin
    for update;
 
   if found then
-    update public.room_visits
-       set ended_at = now()
-     where id = v_visit.id
-    returning * into v_visit;
+    if v_visit.location = v_location then
+      -- Gleicher Ort: Check-out.
+      update public.room_visits
+         set ended_at = now()
+       where id = v_visit.id
+      returning * into v_visit;
+    else
+      -- Anderer Ort: Wechsel. Die alte Session endet jetzt, die neue
+      -- startet jetzt.
+      update public.room_visits
+         set ended_at = now()
+       where id = v_visit.id;
+
+      insert into public.room_visits (user_id, location)
+      values (v_user, v_location)
+      returning * into v_visit;
+    end if;
   else
-    insert into public.room_visits (user_id)
-    values (v_user)
+    insert into public.room_visits (user_id, location)
+    values (v_user, v_location)
     returning * into v_visit;
   end if;
 
@@ -477,22 +519,28 @@ begin
     'user_id', v_visit.user_id,
     'started_at', v_visit.started_at,
     'ended_at', v_visit.ended_at,
+    'location', v_visit.location,
     'open', v_visit.ended_at is null
   );
 end;
 $$;
 
-revoke all on function public.toggle_room_visit() from public;
-grant execute on function public.toggle_room_visit() to authenticated;
+revoke all on function public.toggle_room_visit(text) from public;
+grant execute on function public.toggle_room_visit(text) to authenticated;
 
 -- Leaderboard. `p_range`: all | today | 7d | 30d. Offene Sessions zaehlen
--- live bis jetzt.
+-- live bis jetzt. total_seconds ist die Summe beider Orte; room_seconds und
+-- homeoffice_seconds liefern die Aufteilung fuer den gestapelten Balken.
+drop function if exists public.room_visit_leaderboard(text);
+
 create or replace function public.room_visit_leaderboard(p_range text default 'all')
 returns table (
   user_id uuid,
   username text,
   avatar_url text,
   total_seconds bigint,
+  room_seconds bigint,
+  homeoffice_seconds bigint,
   visit_count int,
   last_visit_at timestamptz
 )
@@ -510,30 +558,41 @@ as $$
       when '30d'   then now() - interval '30 days'
       else null
     end as since
+  ),
+  scoped as (
+    select
+      v.id,
+      v.user_id,
+      v.started_at,
+      v.location,
+      extract(epoch from (
+        least(coalesce(v.ended_at, now()), now())
+        - greatest(v.started_at, coalesce(b.since, v.started_at))
+      )) as seconds
+    from public.room_visits v
+    cross join bounds b
+    where v.started_at <= now()
+      and (v.ended_at is null or v.ended_at >= coalesce(b.since, v.started_at))
   )
   select
     p.id,
     p.username,
     p.avatar_url,
+    coalesce(sum(s.seconds), 0)::bigint as total_seconds,
     coalesce(
-      sum(
-        extract(epoch from (
-          least(coalesce(v.ended_at, now()), now())
-          - greatest(v.started_at, coalesce(b.since, v.started_at))
-        ))
-      ),
+      sum(case when s.location = 'homeoffice' then 0 else s.seconds end),
       0
-    )::bigint as total_seconds,
-    count(v.id)::int as visit_count,
-    max(v.started_at) as last_visit_at
+    )::bigint as room_seconds,
+    coalesce(
+      sum(case when s.location = 'homeoffice' then s.seconds else 0 end),
+      0
+    )::bigint as homeoffice_seconds,
+    count(s.id)::int as visit_count,
+    max(s.started_at) as last_visit_at
   from public.profiles p
-  cross join bounds b
-  left join public.room_visits v
-    on v.user_id = p.id
-   and v.started_at <= now()
-   and (v.ended_at is null or v.ended_at >= coalesce(b.since, v.started_at))
+  left join scoped s on s.user_id = p.id
   group by p.id, p.username, p.avatar_url
-  having count(v.id) > 0
+  having count(s.id) > 0
   order by total_seconds desc, p.username asc;
 $$;
 
@@ -541,14 +600,15 @@ revoke all on function public.room_visit_leaderboard(text) from public;
 -- `anon` braucht es fuer die Kiosk-Ansicht (/display).
 grant execute on function public.room_visit_leaderboard(text) to anon, authenticated;
 
--- Wer ist gerade im Raum.
+-- Wer ist gerade anwesend (Hase-Raum oder Home Office).
 create or replace view public.room_presence as
   select
     v.id,
     v.user_id,
     p.username,
     p.avatar_url,
-    v.started_at
+    v.started_at,
+    v.location
   from public.room_visits v
   join public.profiles p on p.id = v.user_id
   where v.ended_at is null

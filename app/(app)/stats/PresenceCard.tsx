@@ -3,7 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { ClockIcon, HistoryIcon, LogInIcon, LogOutIcon } from "lucide-react";
+import {
+  ClockIcon,
+  HistoryIcon,
+  LaptopIcon,
+  LogInIcon,
+  LogOutIcon,
+} from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,8 +20,11 @@ import {
   formatClock,
   formatClockTime,
   formatDuration,
+  presenceLocationLabel,
+  type PresenceLocation,
   type ToggleResult,
 } from "@/lib/presence";
+import { cn } from "@/lib/utils";
 import AddVisitDialog from "./AddVisitDialog";
 import CheckoutDialog from "./CheckoutDialog";
 
@@ -23,42 +32,53 @@ import CheckoutDialog from "./CheckoutDialog";
 type PresenceView = {
   /** Startzeit der offenen Session, `null` = ausgecheckt. */
   startedAt: string | null;
-  /** Summe der Anwesenheitszeit im gewählten Zeitraum. */
-  total: number;
+  /** Ort der offenen Session. */
+  location: PresenceLocation | null;
+  /** Summe der Hase-Raum-Zeit im gewählten Zeitraum. */
+  room: number;
+  /** Summe der Home-Office-Zeit im gewählten Zeitraum. */
+  homeoffice: number;
 };
 
 /**
- * Eigene Anwesenheit: Status, Live-Uhr und Check-in-/Check-out-Knopf.
+ * Eigene Anwesenheit: Status, Live-Uhr und Check-in-/Check-out-Knöpfe.
  *
- * Der Knopf ruft die Datenbank-Funktion `toggle_room_visit()` auf. Die
- * Funktion ist `security definer` und arbeitet mit `auth.uid()`, damit die
- * Zeit serverseitig festgehalten wird und nicht manipuliert werden kann.
+ * Die Knöpfe rufen die Datenbank-Funktion `toggle_room_visit(p_location)`
+ * auf. Die Funktion ist `security definer` und arbeitet mit `auth.uid()`,
+ * damit die Zeit serverseitig festgehalten wird und nicht manipuliert werden
+ * kann. Ein Check-in am jeweils anderen Ort wechselt die laufende Session.
  *
  * Wer das Auschecken vergessen hat, nutzt den zweiten Knopf: er öffnet ein
  * Popup, in dem die ungefähre Uhrzeit des Gehens gewählt wird.
  *
  * Die Anzeige wird optimistisch aktualisiert: die Antwort der Datenbank
- * übernimmt sofort den lokalen Zustand, sodass Status, Uhr und Summe ohne
+ * übernimmt sofort den lokalen Zustand, sodass Status, Uhr und Summen ohne
  * Reload stimmen. `router.refresh()` holt danach die übrigen Serverdaten
  * (Rangliste, Anwesenheitsliste) nach.
  */
 export default function PresenceCard({
   startedAt: initialStartedAt,
-  totalSeconds,
+  location: initialLocation,
+  roomSeconds,
+  homeofficeSeconds,
   rangeLabel,
 }: {
   startedAt: string | null;
-  totalSeconds: number;
+  location: PresenceLocation | null;
+  roomSeconds: number;
+  homeofficeSeconds: number;
   rangeLabel: string;
 }) {
   const router = useRouter();
   const now = useNow();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<PresenceLocation | null>(null);
 
   // Lokaler Zustand, damit die Karte ohne Server-Roundtrip sofort reagiert.
   const [view, setView] = useState<PresenceView>({
     startedAt: initialStartedAt,
-    total: totalSeconds,
+    location: initialLocation,
+    room: roomSeconds,
+    homeoffice: homeofficeSeconds,
   });
 
   // Optimistischer Stand, den der Server noch bestätigen muss.
@@ -70,31 +90,41 @@ export default function PresenceCard({
   useEffect(() => {
     const incoming: PresenceView = {
       startedAt: initialStartedAt,
-      total: totalSeconds,
+      location: initialLocation,
+      room: roomSeconds,
+      homeoffice: homeofficeSeconds,
     };
     const pending = pendingRef.current;
 
     if (pending) {
       const serverOpen = Boolean(incoming.startedAt);
       const pendingOpen = Boolean(pending.startedAt);
-      if (serverOpen !== pendingOpen) return; // Server noch nicht auf dem Stand
+      if (
+        serverOpen !== pendingOpen ||
+        (serverOpen && incoming.location !== pending.location)
+      ) {
+        return; // Server noch nicht auf dem Stand
+      }
       pendingRef.current = null;
     }
 
     setView(incoming);
-  }, [initialStartedAt, totalSeconds]);
+  }, [initialStartedAt, initialLocation, roomSeconds, homeofficeSeconds]);
 
   const startedAt = view.startedAt;
   const checkedIn = Boolean(startedAt);
   const elapsed = startedAt
     ? Math.max(0, Math.floor((now - new Date(startedAt).getTime()) / 1000))
     : 0;
+  const total = view.room + view.homeoffice;
 
-  async function onToggle() {
-    setLoading(true);
+  async function onToggle(location: PresenceLocation) {
+    setLoading(location);
     const supabase = createClient();
-    const { data, error } = await supabase.rpc("toggle_room_visit");
-    setLoading(false);
+    const { data, error } = await supabase.rpc("toggle_room_visit", {
+      p_location: location,
+    });
+    setLoading(null);
 
     if (error) {
       toast.error("Konnte nicht umschalten", { description: error.message });
@@ -103,20 +133,40 @@ export default function PresenceCard({
 
     const result = data as ToggleResult | null;
     const open = Boolean(result?.open);
+    const wasOpen = Boolean(view.startedAt);
+    const previousLocation = view.location;
 
-    // Optimistisch übernehmen: die Karte zeigt den neuen Zustand sofort.
+    // Die Summen aus der Rangliste zaehlen die offene Session bereits live
+    // mit. Deshalb bleiben sie hier unveraendert — der anschliessende
+    // Refresh liefert den exakten Stand (auch bei nachtraeglicher Endzeit).
     const next: PresenceView = {
       startedAt: open ? (result?.started_at ?? null) : null,
-      total: open ? view.total : view.total + elapsed,
+      location: open ? (result?.location ?? location) : null,
+      room: view.room,
+      homeoffice: view.homeoffice,
     };
     pendingRef.current = next;
     setView(next);
 
-    toast.success(open ? "Du bist jetzt eingecheckt." : "Du bist jetzt ausgecheckt.", {
-      description: open
-        ? "Die Zeit im Hase-Raum läuft."
-        : "Deine Anwesenheitszeit wurde gestoppt.",
-    });
+    if (!open) {
+      toast.success("Du bist jetzt ausgecheckt.", {
+        description: "Deine Anwesenheitszeit wurde gestoppt.",
+      });
+    } else if (wasOpen && previousLocation !== location) {
+      toast.success(`Jetzt im ${presenceLocationLabel(location)}.`, {
+        description: "Der Ort wurde gewechselt – die Zeit läuft weiter.",
+      });
+    } else {
+      toast.success(
+        `Du bist jetzt im ${presenceLocationLabel(location)} eingecheckt.`,
+        {
+          description:
+            location === "room"
+              ? "Die Zeit im Hase-Raum läuft."
+              : "Deine Home-Office-Zeit läuft.",
+        },
+      );
+    }
 
     // Der Server-Cache kennt den neuen Stand noch nicht — kurz leeren,
     // damit Rangliste und Anwesenheitsliste sofort stimmen.
@@ -134,17 +184,14 @@ export default function PresenceCard({
    * Die Server-Route hat die Session bereits beendet — hier wird nur der
    * lokale Zustand nachgezogen.
    */
-  async function onManualCheckout(endedAt: string) {
-    const duration = Math.max(
-      0,
-      Math.floor(
-        (new Date(endedAt).getTime() - new Date(startedAt!).getTime()) / 1000,
-      ),
-    );
-
+  async function onManualCheckout() {
+    // Die Rangliste zaehlt die offene Session bereits live mit; die exakte
+    // (ggf. nach hinten korrigierte) Summe kommt mit dem Refresh.
     const next: PresenceView = {
       startedAt: null,
-      total: view.total + duration,
+      location: null,
+      room: view.room,
+      homeoffice: view.homeoffice,
     };
     pendingRef.current = next;
     setView(next);
@@ -156,12 +203,14 @@ export default function PresenceCard({
 
   /**
    * Vergessene Anwesenheit nachtragen: Die Server-Route hat den Eintrag
-   * angelegt, die Summe wächst um die nachgetragene Zeit.
+   * angelegt, die Summe des jeweiligen Ortes wächst um die Zeit.
    */
-  function onAddVisit(seconds: number) {
+  function onAddVisit(seconds: number, location: PresenceLocation) {
     const next: PresenceView = {
       startedAt: view.startedAt,
-      total: view.total + seconds,
+      location: view.location,
+      room: view.room + (location === "room" ? seconds : 0),
+      homeoffice: view.homeoffice + (location === "homeoffice" ? seconds : 0),
     };
     pendingRef.current = next;
     setView(next);
@@ -169,15 +218,29 @@ export default function PresenceCard({
     router.refresh();
   }
 
+  const isRoom = checkedIn && view.location === "room";
+  const isHomeOffice = checkedIn && view.location === "homeoffice";
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>Deine Anwesenheit</CardTitle>
         <CardAction>
           {checkedIn ? (
-            <Badge className="gap-1.5 bg-success/15 text-success ring-1 ring-inset ring-success/25">
-              <ClockIcon className="size-3" />
-              Eingecheckt
+            <Badge
+              className={cn(
+                "gap-1.5 ring-1 ring-inset",
+                isHomeOffice
+                  ? "bg-warning/15 text-warning ring-warning/25"
+                  : "bg-primary/15 text-primary ring-primary/25",
+              )}
+            >
+              {isHomeOffice ? (
+                <LaptopIcon className="size-3" />
+              ) : (
+                <ClockIcon className="size-3" />
+              )}
+              {presenceLocationLabel(view.location)}
             </Badge>
           ) : (
             <Badge variant="secondary">Ausgecheckt</Badge>
@@ -195,7 +258,7 @@ export default function PresenceCard({
                 {formatClock(elapsed)}
               </p>
               <p className="meta mt-1.5" suppressHydrationWarning>
-                dabei seit{" "}
+                {isHomeOffice ? "im Home Office" : "im Hase-Raum"} seit{" "}
                 {new Date(startedAt!).toLocaleTimeString("de-DE", {
                   hour: "2-digit",
                   minute: "2-digit",
@@ -204,37 +267,62 @@ export default function PresenceCard({
             </div>
           ) : (
             <p className="text-sm leading-relaxed text-muted-foreground">
-              Du bist gerade nicht im Hase-Raum. Checke ein, um deine Zeit zu
-              tracken.
+              Du bist gerade nicht eingecheckt. Checke im Hase-Raum oder im
+              Home Office ein, um deine Zeit zu tracken.
             </p>
           )}
 
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
             <Button
-              onClick={onToggle}
-              disabled={loading}
-              variant={checkedIn ? "outline" : "default"}
+              onClick={() => onToggle("room")}
+              disabled={loading !== null}
+              variant={isRoom ? "outline" : "default"}
               className="w-full sm:w-auto sm:self-start"
             >
-              {loading ? (
+              {loading === "room" ? (
                 <Spinner />
-              ) : checkedIn ? (
+              ) : isRoom ? (
                 <LogOutIcon />
               ) : (
                 <LogInIcon />
               )}
-              {loading
+              {loading === "room"
                 ? "Einen Moment…"
-                : checkedIn
-                  ? "Auschecken"
-                  : "Einchecken"}
+                : isRoom
+                  ? "Im Hase-Raum auschecken"
+                  : "Hase-Raum einchecken"}
+            </Button>
+
+            <Button
+              onClick={() => onToggle("homeoffice")}
+              disabled={loading !== null}
+              variant="outline"
+              className={cn(
+                "w-full border-warning/40 text-warning hover:bg-warning/10 hover:text-warning sm:w-auto sm:self-start",
+                isHomeOffice && "bg-warning/10",
+              )}
+            >
+              {loading === "homeoffice" ? (
+                <Spinner />
+              ) : isHomeOffice ? (
+                <LogOutIcon />
+              ) : (
+                <LaptopIcon />
+              )}
+              {loading === "homeoffice"
+                ? "Einen Moment…"
+                : isHomeOffice
+                  ? "Home Office beenden"
+                  : "Home Office einchecken"}
             </Button>
 
             {checkedIn ? (
               <CheckoutDialog
                 startedAt={startedAt!}
                 title="Wann bist du gegangen?"
-                description={`Du bist seit ${formatClockTime(startedAt!)} eingecheckt. Wähle die ungefähre Uhrzeit, zu der du den Hase-Raum verlassen hast.`}
+                description={`Du bist seit ${formatClockTime(startedAt!)} im ${presenceLocationLabel(
+                  view.location,
+                )} eingecheckt. Wähle die ungefähre Uhrzeit, zu der du aufgehört hast.`}
                 trigger={
                   <Button
                     variant="outline"
@@ -263,11 +351,16 @@ export default function PresenceCard({
               />
             ) : null}
 
-            <AddVisitDialog onAdded={onAddVisit} />
+            <AddVisitDialog
+              defaultLocation={view.location ?? "room"}
+              onAdded={onAddVisit}
+            />
           </div>
 
           <p className="meta">
-            Gesamt ({rangeLabel}): {formatDuration(view.total)}
+            Gesamt ({rangeLabel}): {formatDuration(total)} · Hase-Raum:{" "}
+            {formatDuration(view.room)} · Home Office:{" "}
+            {formatDuration(view.homeoffice)}
           </p>
         </div>
       </CardContent>

@@ -27,7 +27,7 @@ export const navItems: NavItem[] = [
     href: "/stats",
     label: "Stats",
     icon: ChartColumnIcon,
-    description: "Wer wie lange im Hase-Raum war.",
+    description: "Wer wie lange im Hase-Raum oder im Home Office war.",
   },
   {
     href: "/good-deeds",

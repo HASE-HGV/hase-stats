@@ -55,9 +55,9 @@ export default async function StatsPage({
   ]);
 
   const mine = inRoom.find((r) => r.user_id === user!.id) ?? null;
-  const myTotal = Number(
-    rows.find((r) => r.user_id === user!.id)?.total_seconds ?? 0,
-  );
+  const myRow = rows.find((r) => r.user_id === user!.id);
+  const myRoom = Number(myRow?.room_seconds ?? myRow?.total_seconds ?? 0);
+  const myHomeoffice = Number(myRow?.homeoffice_seconds ?? 0);
   const rangeLabel =
     presenceRanges.find((r) => r.value === range)?.label ?? "Allzeit";
 
@@ -65,7 +65,7 @@ export default async function StatsPage({
     <div className="page">
       <PageHeader
         title="Stats"
-        description="Wer wie lange im Hase-Raum war."
+        description="Wer wie lange im Hase-Raum oder im Home Office war."
         action={
           <Button
             variant="outline"
@@ -80,7 +80,7 @@ export default async function StatsPage({
 
       {params.presence === "in" ? (
         <p className="rounded-2xl bg-success/15 px-4 py-3 text-sm font-medium text-success ring-1 ring-inset ring-success/25">
-          Du bist jetzt eingecheckt — die Zeit läuft.
+          Du bist jetzt im Hase-Raum eingecheckt — die Zeit läuft.
         </p>
       ) : null}
       {params.presence === "out" ? (
@@ -97,7 +97,9 @@ export default async function StatsPage({
 
       <PresenceCard
         startedAt={mine?.started_at ?? null}
-        totalSeconds={myTotal}
+        location={mine?.location ?? null}
+        roomSeconds={myRoom}
+        homeofficeSeconds={myHomeoffice}
         rangeLabel={rangeLabel}
       />
 
@@ -135,10 +137,10 @@ export default async function StatsPage({
                   <EmptyMedia variant="icon" className="bg-primary/15">
                     <ChartNoAxesColumnIcon className="text-primary" />
                   </EmptyMedia>
-                  <EmptyTitle>Noch keine Besuche</EmptyTitle>
+                  <EmptyTitle>Noch keine Zeiten</EmptyTitle>
                   <EmptyDescription>
-                    Sobald sich jemand eincheckt, erscheint hier die
-                    Rangliste.
+                    Sobald sich jemand im Hase-Raum oder im Home Office
+                    eincheckt, erscheint hier die Rangliste.
                   </EmptyDescription>
                 </EmptyHeader>
               </Empty>
@@ -151,7 +153,7 @@ export default async function StatsPage({
 
       <Card>
         <CardHeader>
-          <CardTitle>Gerade im Raum</CardTitle>
+          <CardTitle>Gerade anwesend</CardTitle>
           <CardAction>
             <Badge variant="secondary" className="gap-1.5">
               <UsersIcon className="size-3" />
