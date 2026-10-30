@@ -3,12 +3,15 @@ import { createClient } from "@/lib/supabase/server";
 import { getAuthUser } from "@/lib/supabase/auth";
 import {
   getActiveTemplates,
+  getCompletedDeeds,
   getPeople,
   getProfile,
+  type CompletedDeedRow,
   type ProfileRow,
 } from "@/lib/data";
 import type { GoodDeedTemplate, Profile } from "@/lib/types";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
@@ -24,9 +27,16 @@ import {
 } from "@/components/ui/empty";
 import { Separator } from "@/components/ui/separator";
 import PageHeader from "@/components/page-header";
+import UserAvatar from "@/components/user-avatar";
+import { relativeTime } from "@/components/relative-time";
 import NewTaskForm from "./NewTaskForm";
 import TaskRowActions from "./TaskRowActions";
-import { ListChecksIcon, TriangleAlertIcon } from "lucide-react";
+import {
+  CheckCircle2Icon,
+  ListChecksIcon,
+  SparklesIcon,
+  TriangleAlertIcon,
+} from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -49,13 +59,15 @@ export default async function WallOfGoodDeedsPage() {
   let templateRows: GoodDeedTemplate[] = [];
   let people: Profile[] = [];
   let profile: ProfileRow | null = null;
+  let completedDeeds: CompletedDeedRow[] = [];
   let loadError: string | null = null;
 
   try {
-    [templateRows, people, profile] = await Promise.all([
+    [templateRows, people, profile, completedDeeds] = await Promise.all([
       getActiveTemplates(),
       getPeople(),
       getProfile(user!.id),
+      getCompletedDeeds(),
     ]);
   } catch (err) {
     loadError =
@@ -159,6 +171,76 @@ export default async function WallOfGoodDeedsPage() {
             })}
           </ul>
         )}
+
+        <section className="flex flex-col gap-3">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <h2 className="text-lg font-semibold">Erledigte Good Deeds</h2>
+            {completedDeeds.length > 0 ? (
+              <Badge variant="secondary" className="gap-1.5">
+                <CheckCircle2Icon className="size-3" />
+                {completedDeeds.length}
+              </Badge>
+            ) : null}
+          </div>
+
+          {completedDeeds.length === 0 ? (
+            <Empty className="border bg-card/40 py-12">
+              <EmptyHeader>
+                <EmptyMedia variant="icon" className="bg-success/15">
+                  <SparklesIcon className="text-success" />
+                </EmptyMedia>
+                <EmptyTitle>Noch keine erledigten Good Deeds</EmptyTitle>
+                <EmptyDescription>
+                  Sobald zwei Personen eine Einreichung bestätigt haben,
+                  erscheint sie hier mit ihrem Foto-Beweis.
+                </EmptyDescription>
+              </EmptyHeader>
+            </Empty>
+          ) : (
+            <ul className="grid list-none grid-cols-1 gap-4 p-0 sm:grid-cols-2 lg:grid-cols-3">
+              {completedDeeds.map((d) => {
+                const label =
+                  d.template?.title ?? d.description ?? "Good Deed";
+                return (
+                  <li key={d.id}>
+                    <Card className="h-full gap-0 py-0">
+                      <a
+                        href={d.photo_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="block aspect-[4/3] overflow-hidden bg-muted"
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={d.photo_url}
+                          alt={`Foto-Beweis für ${label}`}
+                          loading="lazy"
+                          className="size-full object-cover transition-transform duration-300 group-hover/card:scale-[1.03]"
+                        />
+                      </a>
+                      <CardContent className="flex flex-col gap-2 py-4">
+                        <p className="font-medium text-pretty">{label}</p>
+                        <div className="flex items-center gap-2">
+                          <UserAvatar
+                            username={d.author.username}
+                            avatarUrl={d.author.avatar_url}
+                            size="xs"
+                          />
+                          <span className="min-w-0 flex-1 truncate text-sm text-muted-foreground">
+                            @{d.author.username}
+                          </span>
+                          <span className="meta shrink-0">
+                            {relativeTime(d.approved_at ?? d.created_at)}
+                          </span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
 
         <p className="meta text-center">
           Einen Good Deed mit Beweis reichst du unter{" "}

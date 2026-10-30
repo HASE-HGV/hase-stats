@@ -11,6 +11,8 @@ Raspberry Pi im Büro.
 - **Wall of Shame**: Jede:r authentifizierte Person kann andere eintragen
 - **Good Deeds** mit Foto-Beweis (Auswahl aus Template-Liste oder frei)
 - Good Deed wird erst gültig, wenn **2 verschiedene** andere Personen bestätigt haben
+- **Erledigte Good Deeds** erscheinen auf `/good-deeds` als Galerie mit
+  Foto, Aufgabe und Person — Bilder lassen sich in voller Größe öffnen
 - Auto-Resolve: bei 2. Bestätigung wird der älteste offene WoS-Eintrag der Person entfernt
 - **Stats-Seite `/stats`**: Check-in/Check-out mit Live-Uhr, Rangliste als
   gestapeltes Balkendiagramm (blau = Hase-Raum, gelb = Home Office; Zeiträume
@@ -165,7 +167,7 @@ Wall of Shame und Rangliste.
 | `/stats/checkin`   | ja   | Check-in/Check-out per QR (Route-Handler)     |
 | `/api/presence/checkout` | ja | Auschecken mit eigener Uhrzeit (JSON)      |
 | `/api/presence/visit`    | ja | Vergessene Anwesenheit nachtragen (JSON)   |
-| `/good-deeds`      | ja   | Aufgabenliste pflegen (Eintrag/Aufgabe)       |
+| `/good-deeds`      | ja   | Aufgaben pflegen + Galerie erledigter Deeds   |
 | `/deeds`           | ja   | Good Deeds einreichen (mit Foto)              |
 | `/confirm`         | ja   | Offene Good Deeds anderer Personen bestätigen |
 | `/quotes`          | ja   | Zitate und Dialoge                            |

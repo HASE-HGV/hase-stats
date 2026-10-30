@@ -408,6 +408,59 @@ export async function getPendingDeeds(): Promise<PendingDeedRow[]> {
   return cachedPendingDeeds();
 }
 
+/** Ein abgeschlossener (von zwei Personen bestätigter) Good Deed. */
+export type CompletedDeedRow = {
+  id: string;
+  user_id: string;
+  photo_url: string;
+  description: string | null;
+  created_at: string;
+  approved_at: string | null;
+  template: { title: string } | null;
+  author: { username: string; avatar_url: string | null };
+};
+
+async function fetchCompletedDeeds(): Promise<CompletedDeedRow[]> {
+  const supabase = createAdminClient();
+  const { data } = await supabase
+    .from("good_deeds")
+    .select(
+      `id, user_id, photo_url, description, created_at, approved_at,
+       template:template_id(title),
+       author:user_id(username, avatar_url)`
+    )
+    .eq("status", "approved")
+    .order("approved_at", { ascending: false, nullsFirst: false });
+  return (data ?? []) as unknown as CompletedDeedRow[];
+}
+
+const cachedCompletedDeeds = unstable_cache(
+  fetchCompletedDeeds,
+  ["completed_deeds"],
+  {
+    revalidate: TTL_DEEDS,
+    tags: [TAG_DEEDS],
+  }
+);
+
+/** Alle abgeschlossenen Good Deeds — Grundlage fuer die Galerie. */
+export async function getCompletedDeeds(): Promise<CompletedDeedRow[]> {
+  if (!hasAdminKey()) {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from("good_deeds")
+      .select(
+        `id, user_id, photo_url, description, created_at, approved_at,
+         template:template_id(title),
+         author:user_id(username, avatar_url)`
+      )
+      .eq("status", "approved")
+      .order("approved_at", { ascending: false, nullsFirst: false });
+    return (data ?? []) as unknown as CompletedDeedRow[];
+  }
+  return cachedCompletedDeeds();
+}
+
 async function fetchPendingTemplateIds(): Promise<string[]> {
   const supabase = createAdminClient();
   const { data } = await supabase
