@@ -88,54 +88,78 @@ export default function DisplayDeck({
   return (
     <>
       <section className="flex min-h-0 flex-1 flex-col gap-4">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-semibold sm:text-4xl">
-              {isWall
-                ? "Wall of Shame"
-                : isStats
-                  ? "Rangliste"
-                  : "Erledigte Good Deeds"}
-            </h1>
-            {isWall ? (
-              wallCount > 0 ? (
-                <Badge variant="destructive" className="gap-1 text-sm">
-                  <ShieldAlertIcon className="size-3.5" />
-                  {wallCount} {wallCount === 1 ? "Eintrag" : "Einträge"}
-                </Badge>
-              ) : null
-            ) : isStats ? (
-              <>
+        <div className="flex flex-col gap-2.5">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <h1 className="text-3xl font-semibold sm:text-4xl">
+                {isWall
+                  ? "Wall of Shame"
+                  : isStats
+                    ? "Rangliste"
+                    : "Erledigte Good Deeds"}
+              </h1>
+              {isWall ? (
+                wallCount > 0 ? (
+                  <Badge variant="destructive" className="gap-1 text-sm">
+                    <ShieldAlertIcon className="size-3.5" />
+                    {wallCount} {wallCount === 1 ? "Eintrag" : "Einträge"}
+                  </Badge>
+                ) : null
+              ) : isStats ? (
+                <>
+                  <Badge variant="secondary" className="gap-1 text-sm">
+                    <ChartNoAxesColumnIcon className="size-3.5" />
+                    {statsCount} {statsCount === 1 ? "Person" : "Personen"}
+                  </Badge>
+                  <span className="text-sm text-muted-foreground">
+                    {statsRangeLabel}
+                  </span>
+                </>
+              ) : deedsCount > 0 ? (
                 <Badge variant="secondary" className="gap-1 text-sm">
-                  <ChartNoAxesColumnIcon className="size-3.5" />
-                  {statsCount} {statsCount === 1 ? "Person" : "Personen"}
+                  <CheckCircle2Icon className="size-3.5" />
+                  {deedsCount}
                 </Badge>
-                <span className="text-sm text-muted-foreground">
-                  {statsRangeLabel}
+              ) : null}
+            </div>
+
+            <div className="flex items-center gap-1 rounded-full bg-muted p-1 text-sm">
+              {VIEWS.map((item) => (
+                <span
+                  key={item}
+                  className={cn(
+                    "rounded-full px-3 py-1 text-xs font-medium transition-colors",
+                    view === item
+                      ? "bg-background text-foreground"
+                      : "text-muted-foreground",
+                  )}
+                >
+                  {VIEW_LABELS[item]}
                 </span>
-              </>
-            ) : deedsCount > 0 ? (
-              <Badge variant="secondary" className="gap-1 text-sm">
-                <CheckCircle2Icon className="size-3.5" />
-                {deedsCount}
-              </Badge>
-            ) : null}
+              ))}
+            </div>
           </div>
 
-          <div className="flex items-center gap-1 rounded-full bg-muted p-1 text-sm">
-            {VIEWS.map((item) => (
-              <span
-                key={item}
-                className={cn(
-                  "rounded-full px-3 py-1 text-xs font-medium transition-colors",
-                  view === item
-                    ? "bg-background text-foreground"
-                    : "text-muted-foreground",
-                )}
-              >
-                {VIEW_LABELS[item]}
-              </span>
-            ))}
+          {/* Laeuft leer, bis die naechste Ansicht erscheint. */}
+          <div
+            className="h-1 w-full overflow-hidden rounded-full bg-muted"
+            role="progressbar"
+            aria-label="Zeit bis zur nächsten Ansicht"
+          >
+            <div
+              key={view}
+              className={cn(
+                "h-full origin-left rounded-full",
+                isWall
+                  ? "bg-destructive"
+                  : isStats
+                    ? "bg-primary"
+                    : "bg-success",
+              )}
+              style={{
+                animation: `display-progress ${VIEW_DURATION}ms linear forwards`,
+              }}
+            />
           </div>
         </div>
 
