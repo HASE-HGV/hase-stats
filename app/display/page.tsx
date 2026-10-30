@@ -1,7 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
 import type { Profile, ShameWallRow, QuoteRow } from "@/lib/types";
 import { toDisplayQuote, shuffleQuotesForDisplay } from "@/lib/quotes";
-import { getLeaderboard, getPresence } from "@/lib/data";
+import {
+  getCompletedDeeds,
+  getLeaderboard,
+  getPresence,
+} from "@/lib/data";
 import { STATS_TIME_ZONE } from "@/lib/activity";
 import { formatClockTimeIn } from "@/lib/presence";
 import { cn } from "@/lib/utils";
@@ -20,6 +24,9 @@ export const revalidate = 30;
 const DISPLAY_RANGE = "7d";
 const DISPLAY_RANGE_LABEL = "letzte 7 Tage";
 
+/** So viele der neuesten Good Deeds passen auf eine Kiosk-Ansicht. */
+const DISPLAY_DEEDS = 8;
+
 export default async function DisplayPage() {
   const supabase = await createClient();
   const [
@@ -28,6 +35,7 @@ export default async function DisplayPage() {
     { data: people },
     leaderboardRows,
     presenceRows,
+    completedDeedRows,
   ] = await Promise.all([
     supabase
       .from("shame_wall")
@@ -42,6 +50,7 @@ export default async function DisplayPage() {
     supabase.from("profiles").select("id, username, avatar_url"),
     getLeaderboard(DISPLAY_RANGE),
     getPresence(),
+    getCompletedDeeds(),
   ]);
 
   const rows = (data ?? []) as ShameWallRow[];
@@ -119,6 +128,52 @@ export default async function DisplayPage() {
       </div>
     );
 
+  const displayDeeds = completedDeedRows.slice(0, DISPLAY_DEEDS);
+
+  const deedsPanel =
+    displayDeeds.length === 0 ? (
+      <div className="flex flex-1 flex-col items-center justify-center gap-4 text-center">
+        <div className="flex size-20 items-center justify-center rounded-2xl bg-success/15">
+          <SparklesIcon className="size-10 text-success" />
+        </div>
+        <p className="text-2xl font-medium text-balance">
+          Noch keine erledigten Good Deeds.
+        </p>
+      </div>
+    ) : (
+      <ul className="grid min-h-0 flex-1 list-none grid-cols-2 gap-4 p-0 xl:grid-cols-4">
+        {displayDeeds.map((d) => {
+          const label = d.template?.title ?? d.description ?? "Good Deed";
+          return (
+            <li key={d.id} className="min-h-0">
+              <Card className="h-full min-h-0 gap-0 py-0">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={d.photo_url}
+                  alt={`Foto-Beweis für ${label}`}
+                  loading="lazy"
+                  className="min-h-0 w-full flex-1 bg-muted object-cover"
+                />
+                <CardContent className="flex shrink-0 items-center gap-2.5 py-3">
+                  <UserAvatar
+                    username={d.author.username}
+                    avatarUrl={d.author.avatar_url}
+                    size="sm"
+                  />
+                  <div className="min-w-0">
+                    <p className="truncate text-base font-semibold">{label}</p>
+                    <p className="truncate text-sm text-muted-foreground">
+                      @{d.author.username}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            </li>
+          );
+        })}
+      </ul>
+    );
+
   // Wer gerade im Raum ist — dauerhaft sichtbar, nicht nur in der Rangliste.
   const inRoomPanel = (
     <div
@@ -182,10 +237,12 @@ export default async function DisplayPage() {
       <DisplayDeck
         wallPanel={wallPanel}
         statsPanel={statsPanel}
+        deedsPanel={deedsPanel}
         inRoomPanel={inRoomPanel}
         quotes={quotes}
         wallCount={rows.length}
         statsCount={leaderboardRows.length}
+        deedsCount={completedDeedRows.length}
         statsRangeLabel={DISPLAY_RANGE_LABEL}
       />
 

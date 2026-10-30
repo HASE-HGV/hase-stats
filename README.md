@@ -31,9 +31,10 @@ Raspberry Pi im Büro.
 - **QR-Code zum Drucken** (`/stats/qr`): hängt an der Tür und schaltet die
   Anwesenheit des gerade eingeloggten Accounts um
 - **Kiosk-Route `/display`** für den Raspberry Pi (read-only, keine Auth):
-  wechselt alle 20 s zwischen Wall of Shame und Rangliste (letzte 7 Tage),
-  zeigt dauerhaft wer gerade im Raum ist (Aktualisierung alle 15 s), die
-  Zeit an jedem Balken und darunter immer zwei Zitate nebeneinander in
+  wechselt alle 20 s zwischen Wall of Shame, Rangliste (letzte 7 Tage) und
+  den neuesten erledigten Good Deeds, zeigt dauerhaft wer gerade im Raum ist
+  (Aktualisierung alle 15 s), die Zeit an jedem Balken und darunter immer
+  zwei Zitate nebeneinander in
   zufälliger Reihenfolge (neue Mischung alle 10 min, Standzeit je Paar nach
   Länge 14–32 s)
 
@@ -150,7 +151,7 @@ chromium-browser --kiosk --noerrdialogs --disable-infobars \
 
 Die Seite aktualisiert sich automatisch (alle 60 s per `router.refresh()`, alle
 5 min per meta refresh als Safety Net) und wechselt alle 20 Sekunden zwischen
-Wall of Shame und Rangliste.
+Wall of Shame, Rangliste und erledigten Good Deeds.
 
 ## Routen
 
@@ -172,7 +173,7 @@ Wall of Shame und Rangliste.
 | `/confirm`         | ja   | Offene Good Deeds anderer Personen bestätigen |
 | `/quotes`          | ja   | Zitate und Dialoge                            |
 | `/profile`         | ja   | Username + Avatar pflegen                     |
-| `/display`         | nein | Vollbild-Kiosk: Wall/Rangliste, Präsenzleiste, Zitate |
+| `/display`         | nein | Vollbild-Kiosk: Wall/Rangliste/Good Deeds, Präsenzleiste, Zitate |
 
 ## Anwesenheit im Hase-Raum & Home Office
 
