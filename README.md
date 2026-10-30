@@ -168,7 +168,7 @@ Wall of Shame, Rangliste und erledigten Good Deeds.
 | `/stats/checkin`   | ja   | Check-in/Check-out per QR (Route-Handler)     |
 | `/api/presence/checkout` | ja | Auschecken mit eigener Uhrzeit (JSON)      |
 | `/api/presence/visit`    | ja | Vergessene Anwesenheit nachtragen (JSON)   |
-| `/good-deeds`      | ja   | Aufgaben pflegen + Galerie erledigter Deeds   |
+| `/good-deeds`      | ja   | Aufgaben-Tabelle + Galerie erledigter Deeds   |
 | `/deeds`           | ja   | Good Deeds einreichen (mit Foto)              |
 | `/confirm`         | ja   | Offene Good Deeds anderer Personen bestätigen |
 | `/quotes`          | ja   | Zitate und Dialoge                            |
